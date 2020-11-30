@@ -9,3 +9,7 @@ def home():
 @bp.route('help')
 def help():
     return render_template('static_pages/help.html')
+
+@bp.route('about')
+def about():
+    return render_template('static_pages/about.html')

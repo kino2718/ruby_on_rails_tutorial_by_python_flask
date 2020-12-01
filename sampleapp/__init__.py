@@ -21,5 +21,3 @@ def create_app(test_config=None):
     from .controllers import static_pages_controller
     app.register_blueprint(static_pages_controller.bp)
     return app
-
-app = create_app()

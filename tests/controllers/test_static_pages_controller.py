@@ -1,5 +1,4 @@
 import pytest
-from sampleapp import app
 
 SUCCESS = 200
 

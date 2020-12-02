@@ -14,9 +14,9 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     @app.route('/')
-    def application_hello():
-        from .controllers import application_controller
-        return application_controller.hello()
+    def root():
+        from .controllers import static_pages_controller
+        return static_pages_controller.home()
 
     from .controllers import static_pages_controller
     app.register_blueprint(static_pages_controller.bp)

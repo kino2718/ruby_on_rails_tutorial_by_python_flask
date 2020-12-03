@@ -20,4 +20,11 @@ def create_app(test_config=None):
 
     from .controllers import static_pages_controller
     app.register_blueprint(static_pages_controller.bp)
+
+    @app.after_request
+    def add_default_headers(resp):
+        resp.headers['X-XSS-Protection'] = '1; mode=block'
+        resp.headers['X-Frame-Options'] = 'DENY'
+        return resp
+
     return app

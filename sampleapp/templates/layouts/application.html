@@ -1,9 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>{{ full_title(title) }}</title>
+    <!--[if lt IE 9]>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.min.js">
+      </script>
+    <![endif]-->
   </head>
   <body>
-    <div id="content">{% block content %}{% endblock %}</div>
+    <header class="navbar navbar-fixed-top navbar-inverse">
+      <div class="container">
+		<a href="#" id="logo">sample app</a>
+        <nav>
+          <ul class="nav navbar-nav navbar-right">
+			<li><a href="#">Home</a>
+			<li><a href="#">Help</a>
+			<li><a href="#">Log in</a>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <div class="container">
+      <div id="content">{% block content %}{% endblock %}</div>
+    </div>
   </body>
 </html>

@@ -6,7 +6,7 @@ base_title = "Ruby on Rails Tutorial Sample App"
 def test_should_get_home(client):
     response = client.get('/static_pages/home')
     assert response.status_code==SUCCESS
-    assert f"<title>Home | {base_title}</title>".encode(encoding='utf-8') \
+    assert f"<title>{base_title}</title>".encode(encoding='utf-8') \
         in response.data
 
 def test_should_get_help(client):

@@ -27,4 +27,13 @@ def create_app(test_config=None):
         resp.headers['X-Frame-Options'] = 'DENY'
         return resp
 
+    @app.context_processor
+    def define_template_functions():
+        base_title = 'Ruby on Rails Tutorial Sample App'
+        def full_title(page_title = ''):
+            if not page_title:
+                return base_title
+            else:
+                return f'{page_title} | {base_title}'
+        return dict(full_title=full_title)
     return app

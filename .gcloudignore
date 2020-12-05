@@ -23,3 +23,5 @@ tests/
 .pytest_cache/
 *.egg-info/
 /README.md
+/setup.py
+/MANIFEST.in

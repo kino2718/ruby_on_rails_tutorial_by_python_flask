@@ -1,5 +1,3 @@
-import pytest
-
 SUCCESS = 200
 base_title = "Ruby on Rails Tutorial Sample App"
 

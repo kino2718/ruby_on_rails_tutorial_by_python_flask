@@ -12,8 +12,13 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
+    # register static_pages blueprint
     from .controllers import static_pages_controller
     app.register_blueprint(static_pages_controller.bp)
+
+    # register users blueprint
+    from .controllers import users_controller
+    app.register_blueprint(users_controller.bp)
 
     @app.after_request
     def add_default_headers(resp):

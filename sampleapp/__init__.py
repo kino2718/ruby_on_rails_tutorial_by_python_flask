@@ -1,5 +1,4 @@
 from flask import Flask
-import logging
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -12,11 +11,6 @@ def create_app(test_config=None):
         app.config.from_pyfile('config.py', silent=True)
     else:
         app.config.from_mapping(test_config)
-
-    @app.route('/')
-    def root():
-        from .controllers import static_pages_controller
-        return static_pages_controller.home()
 
     from .controllers import static_pages_controller
     app.register_blueprint(static_pages_controller.bp)

@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template
 
-bp = Blueprint('static_pages', __name__, url_prefix='/static_pages')
+# 1st arg: The name of the blueprint. Will be prepended to each endpoint name.
+bp = Blueprint('static_pages', __name__, url_prefix='/')
 
-@bp.route('/home')
+@bp.route('/')
 def home():
     return render_template('static_pages/home.html')
 

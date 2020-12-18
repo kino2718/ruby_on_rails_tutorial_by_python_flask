@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	
+
   <!-- bootstrup -->
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
 	<!-- custom css -->
-	<link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}?=ver1.0">
+	<link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}?=ver1.5">
 
 	{% include 'layouts/shim.html' %}
 
@@ -17,7 +17,13 @@
   <body>
 	{% include 'layouts/header.html' %}
     <div class="container">
-      <div id="content">{% block content %}{% endblock %}</div>
+	  {% with messages = get_flashed_messages(with_categories=True) %}
+	  {% for cat, mes in messages %}
+	  <div class="alert alert-{{ cat }}">{{ mes }}</div>
+	  {% endfor %}
+	  {% endwith %}
+
+	  {% block content %}{% endblock %}
 	  {% include 'layouts/footer.html' %}
     </div>
   </body>

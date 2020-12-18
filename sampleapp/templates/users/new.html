@@ -2,5 +2,28 @@
 {% set title = 'Sign up' %}
 {% block content %}
 <h1>Sign up</h1>
-<p>This will be a signup page for new users.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+	<form action="{{ url_for('users.create') }}" accept-charset="UTF-8" method="post">
+	  {% include 'shared/error_messages.html' %}
+
+	  <input type="hidden" name="authenticity_token" value="{{ csrf_token }}" />
+
+	  {{ emphasize_error_field(user, 'name', '<label for="user_name">Name</label>')|safe }}
+	  {{ emphasize_error_field(user, 'name', '<input type="text" name="name" id="user_name" class="form-control" />')|safe }}
+
+	  {{ emphasize_error_field(user, 'email', '<label for="user_email">Email</label>')|safe }}
+	  {{ emphasize_error_field(user, 'email', '<input type="email" name="email" id="user_email" class="form-control" />')|safe }}
+
+	  {{ emphasize_error_field(user, 'password', '<label for="user_password">Password</label>')|safe }}
+	  {{ emphasize_error_field(user, 'password', '<input type="password" name="password" id="user_password" class="form-control" />')|safe }}
+
+	  {{ emphasize_error_field(user, 'password_confirmation', '<label for="user_password_confirmation">Confirmation</label>')|safe }}
+	  {{ emphasize_error_field(user, 'password_confirmation', '<input type="password" name="password_confirmation" id="user_password_confirmation" class="form-control" />')|safe }}
+
+	  <input type="submit" name="commit" value="Create my account" class="btn btn-primary" />
+	</form>
+  </div>
+</div>
 {% endblock %}

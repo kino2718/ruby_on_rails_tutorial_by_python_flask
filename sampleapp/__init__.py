@@ -19,6 +19,8 @@ def create_app(test_config=None):
     # register users blueprint
     from .controllers import users_controller
     app.register_blueprint(users_controller.bp)
+    # map '/signup' to '/users/new'
+    app.add_url_rule('/signup', endpoint='users.new')
 
     @app.after_request
     def add_default_headers(resp):
@@ -28,11 +30,11 @@ def create_app(test_config=None):
 
     @app.context_processor
     def define_template_functions():
-        base_title = 'Ruby on Rails Tutorial Sample App'
-        def full_title(page_title = ''):
-            if not page_title:
-                return base_title
-            else:
-                return f'{page_title} | {base_title}'
-        return dict(full_title=full_title)
+        from .helpers import application_helper, users_helper
+        app_helper_functions = application_helper.template_functions()
+        user_helper_functions = users_helper.template_functions()
+
+        helpers = {}
+        helpers.update(**app_helper_functions, **user_helper_functions)
+        return helpers
     return app

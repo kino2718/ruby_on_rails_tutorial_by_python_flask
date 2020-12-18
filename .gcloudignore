@@ -17,7 +17,6 @@
 __pycache__/
 # Ignored by the build system
 /setup.cfg
-
 venv/
 tests/
 .pytest_cache/
@@ -25,3 +24,4 @@ tests/
 /README.md
 /setup.py
 /MANIFEST.in
+/setup_env

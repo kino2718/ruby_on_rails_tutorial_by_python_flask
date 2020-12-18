@@ -1,4 +1,4 @@
-from flask import render_template, url_for
+from flask import render_template
 
 def test_layout_links(client):
     with client:

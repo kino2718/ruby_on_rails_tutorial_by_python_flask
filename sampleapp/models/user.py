@@ -4,6 +4,7 @@ from datetime import datetime
 import copy
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
+from .errors import Errors
 
 class User:
     KIND_EMAILS = 'emails'
@@ -20,7 +21,7 @@ class User:
         self.password = kwargs.get('password')
         self.password_confirmation = kwargs.get('password_confirmation')
         self.password_digest = kwargs.get('password_digest')
-        self.errors = []
+        self.errors = Errors()
 
     def __repr__(self):
         return f'User(id={self.id.__repr__()}, ' +\
@@ -40,35 +41,35 @@ class User:
             f'password_digest={self.password_digest})'
 
     def valid(self):
-        self.errors = []
+        self.errors = Errors()
         v = True
         if (not self.name) or (not self.name.strip()):
             v = False
-            self.errors.append("name can't be blank")
+            self.errors.add('name', "name can't be blank")
         if self.name and (50 < len(self.name)):
             v = False
-            self.errors.append("name is too long")
+            self.errors.add('name', "name is too long")
         if (not self.email) or (not self.email.strip()):
             v = False
-            self.errors.append("email can't be blank")
+            self.errors.add('email', "email can't be blank")
         if self.email and (255 < len(self.email)):
             v = False
-            self.errors.append('email is too long')
-        if not User.EMAIL_PATTERN.match(self.email):
+            self.errors.add('email', 'email is too long')
+        if self.email and (not User.EMAIL_PATTERN.match(self.email)):
             v = False
-            self.errors.append('email is invalid')
+            self.errors.add('email', 'email is invalid')
         if self._does_email_exist():
             v = False
-            self.errors.append('email has already been taken')
+            self.errors.add('email', 'email has already been taken')
         if (not self.password) or (not self.password.strip()):
             v = False
-            self.errors.append("password can't be blank")
+            self.errors.add('password', "password can't be blank")
         if self.password and (len(self.password) < 6):
             v = False
-            self.errors.append('password is too short')
+            self.errors.add('password', 'password is too short')
         if self.password != self.password_confirmation:
             v = False
-            self.errors.append("password confirmation doesn't match password")
+            self.errors.add('password_confirmation', "password confirmation doesn't match password")
 
         # if not v:
         #     print(f'Invalid: {self}. {self.errors}')
@@ -259,11 +260,15 @@ class User:
         client = datastore.Client()
         key = client.key(User.KIND_USERS, id)
         entity = client.get(key)
+        if entity is None:
+            return None
         user = User(id=entity.key.id, **entity)
         return user
 
     @staticmethod
     def find_by(type, value):
+        if value is None:
+            return []
         if type == 'email':
             value = value.lower()
         client = datastore.Client()
@@ -281,6 +286,11 @@ class User:
         users = [User(id=entity.key.id, **entity) for entity in entities]
         return users
 
+    @staticmethod
+    def count():
+        users = User.all()
+        return len(users)
+
     def authenticate(self, p):
         if check_password_hash(self.password_digest, p):
             return self
@@ -292,114 +302,3 @@ class User:
         if len(users) == 0 or users[0].id == self.id:
             return False
         return True
-# end of class User
-
-if __name__ == '__main__':
-    import time
-
-    def show_all_users():
-        users = User.all()
-        print(f'** 登録ユーザー一覧 **')
-        for user in users:
-            print(user)
-
-    def show_all_emails():
-        client = datastore.Client()
-        query = client.query(kind=User.KIND_EMAILS)
-        emails = list(query.fetch())
-        print('** 登録メールアドレス一覧 **')
-        for email in emails:
-            print(f'{email.key.name} {email["created_at"]}')
-
-    def delete_all_emails():
-        client = datastore.Client()
-        query = client.query(kind=User.KIND_EMAILS)
-        emails = list(query.fetch())
-        for email in emails:
-            key = client.key(User.KIND_EMAILS, email.key.name)
-            print(f'***** deleting email key: {key}')
-            client.delete(key)
-
-    def delete_all_users():
-        client = datastore.Client()
-        query = client.query(kind=User.KIND_USERS)
-        users = list(query.fetch())
-        for user in users:
-            key = client.key(User.KIND_USERS, user.key.id)
-            client.delete(key)
-
-    def check_num_users():
-        client = datastore.Client()
-        query = client.query(kind=User.KIND_USERS)
-        entities = list(query.fetch())
-        users = [User(id=entity.key.id, **entity) for entity in entities]
-        if 1 < len(users):
-            print(f'******** ERROR: num users are {len(users)} ********')
-            raise Exception()
-
-
-    def save_user(name, email, password, password_confirmation, results):
-        u = User(name=name, email=email,password=password,
-                 password_confirmation=password_confirmation)
-        u.save()
-        results[name] = u
-
-    delete_all_emails()
-    delete_all_users()
-    #time.sleep(5)
-    email = 'foo@bar.coM'
-    name_A = 'A'
-    name_B = 'B'
-    password = 'foobar'
-    password_confirmation = 'foobar'
-    import threading
-    results = {}
-    t1 = threading.Thread(target=save_user,
-                          args=(name_A,email,password,password_confirmation,
-                                results))
-    t2 = threading.Thread(target=save_user,
-                          args=(name_B,email,password,password_confirmation,
-                                results))
-    t1.start()
-    #time.sleep(1)
-    t2.start()
-    t1.join()
-    t2.join()
-    check_num_users()
-    show_all_emails()
-    show_all_users()
-
-    print(f'\n**** test find_by: email={email} ****')
-    users = User.find_by('email', email)
-    print(users)
-
-    if results[name_A].id:
-        user = results[name_A]
-    else:
-        user = results[name_B]
-
-    print('\n**** test find ****')
-    user2 = User.find(user.id)
-    print(user2)
-
-    print('**** test authenticate ****')
-    r = user2.authenticate(password)
-    print(f'result: {r}')
-
-    #print(f'user: {user}')
-    #user.name = 'maruko'
-    user.email = 'baz@bar.com'
-    user.save()
-
-    user.update(name= 'A'*51, email='hamajibar.com')
-
-    #time.sleep(3)
-    print(f'******** Errors ********\n{user.errors}')
-    user2 = User(name='taro', email='baz@bar.com')
-    user2.valid()
-    print(f'******** Errors ********\n{user2.errors}')
-    show_all_emails()
-    show_all_users()
-    # user.destroy()
-    # show_all_emails()
-    # show_all_users()

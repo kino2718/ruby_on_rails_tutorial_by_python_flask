@@ -1,0 +1,17 @@
+{% if user.errors.has_errors() %}
+<div id="error_explanation">
+  <div class="alert alert-danger">
+    The form contains {{ user.errors.count }}
+	{% if user.errors.count == 1 %}
+	error.
+	{% else %}
+    errors.
+	{% endif %}
+  </div>
+  <ul>
+    {% for msg in user.errors.full_messages() %}
+    <li>{{ msg }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

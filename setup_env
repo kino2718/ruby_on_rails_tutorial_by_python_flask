@@ -1,0 +1,4 @@
+. venv/bin/activate
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/credentials.json"
+export FLASK_APP=sampleapp
+export FLASK_ENV=development

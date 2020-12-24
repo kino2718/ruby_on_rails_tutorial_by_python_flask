@@ -7,15 +7,16 @@ import time
 AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="authenticity_token" value="(.*)"')
 WAIT_UNTIL_DATA_PROCESSED = 5
 
-@pytest.fixture
-def delate_all_users_after_test(autouse=True):
-    yield
-    users = User.all()
-    for user in users:
-        user.destroy()
-        time.sleep(WAIT_UNTIL_DATA_PROCESSED)
+# 危険なので削除。必要なら手動で行う。
+# @pytest.fixture
+# def delete_all_users_after_test(autouse=True):
+#     yield
+#     users = User.all()
+#     for user in users:
+#         user.destroy()
+#         time.sleep(WAIT_UNTIL_DATA_PROCESSED)
 
-def test_invalid_signup_information(client, delate_all_users_after_test):
+def test_invalid_signup_information(client):
     with client:
         response = client.get('/signup')
         contents = response.data.decode(encoding='utf-8')
@@ -45,7 +46,7 @@ def test_invalid_signup_information(client, delate_all_users_after_test):
         #print(f'**** ref ****\n{ref}')
         assert response.data == ref
 
-def test_valid_signup_information(client, delate_all_users_after_test):
+def test_valid_signup_information(client):
     with client:
         response = client.get('/signup')
         contents = response.data.decode(encoding='utf-8')
@@ -70,6 +71,9 @@ def test_valid_signup_information(client, delate_all_users_after_test):
         user.valid()
         ref = render_template(
             'users/show.html',user=user).encode(encoding='utf-8')
-        print(f'**** response ****\n{response.data}')
-        print(f'**** ref ****\n{ref}')
         assert response.data == ref
+
+        # 登録したユーザーを削除
+        users = User.find_by('email', 'user@example.com')
+        if users:
+            users[0].destroy()

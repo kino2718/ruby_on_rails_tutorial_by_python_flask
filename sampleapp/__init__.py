@@ -22,6 +22,10 @@ def create_app(test_config=None):
     # map '/signup' to '/users/new'
     app.add_url_rule('/signup', endpoint='users.new')
 
+    # register sessions blueprint
+    from .controllers import sessions_controller
+    app.register_blueprint(sessions_controller.bp)
+
     @app.after_request
     def add_default_headers(resp):
         resp.headers['X-XSS-Protection'] = '1; mode=block'
@@ -30,11 +34,13 @@ def create_app(test_config=None):
 
     @app.context_processor
     def define_template_functions():
-        from .helpers import application_helper, users_helper
+        from .helpers import application_helper, users_helper, sessions_helper
         app_helper_functions = application_helper.template_functions()
-        user_helper_functions = users_helper.template_functions()
+        users_helper_functions = users_helper.template_functions()
+        sessions_helper_functions = sessions_helper.template_functions()
 
         helpers = {}
-        helpers.update(**app_helper_functions, **user_helper_functions)
+        helpers.update(**app_helper_functions, **users_helper_functions,
+                       **sessions_helper_functions)
         return helpers
     return app

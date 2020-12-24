@@ -1,5 +1,6 @@
 import pytest
 from sampleapp.models.user import User
+import copy
 
 @pytest.fixture
 def user():
@@ -43,12 +44,10 @@ def test_email_validation_should_reject_invalid_addresses(user):
         user.email = invalid_address
         assert not user.valid(), f"{invalid_address} should be invalid"
 
-import copy
 def test_email_addresses_should_be_unique(user):
-    duplicate_user = copy.copy(user)
-    #duplicate_user.email = user.email.upper()
-    user.save()
     try:
+        duplicate_user = copy.copy(user)
+        user.save()
         assert not duplicate_user.valid()
     finally:
         user.destroy()

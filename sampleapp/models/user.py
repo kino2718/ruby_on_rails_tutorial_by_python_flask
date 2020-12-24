@@ -257,6 +257,8 @@ class User:
 
     @staticmethod
     def find(id):
+        if id is None:
+            return None
         client = datastore.Client()
         key = client.key(User.KIND_USERS, id)
         entity = client.get(key)

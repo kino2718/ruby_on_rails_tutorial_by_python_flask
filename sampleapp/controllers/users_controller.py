@@ -1,6 +1,8 @@
 from flask import (Blueprint, render_template, session, request, abort,
                    redirect, url_for, flash)
 from ..models.user import User
+from ..helpers.application_helper import csrf_token, check_csrf_token
+from ..helpers.sessions_helper import log_in
 import secrets
 
 bp = Blueprint('users', __name__, url_prefix='/users')
@@ -16,15 +18,13 @@ def show(id):
 
 @bp.route('/new')
 def new():
-    token = secrets.token_hex()
-    session[_CSRF_TOKEN] = token
+    token = csrf_token()
     return render_template('users/new.html', user=User(), csrf_token=token)
 
 @bp.route('', methods=['POST'])
 def create():
-    csrf_token = request.form.get('authenticity_token')
-    right_csrf_token = session[_CSRF_TOKEN]
-    if (csrf_token != right_csrf_token):
+    csrf_token = check_csrf_token()
+    if not csrf_token:
         abort(422)
 
     name = request.form['name']
@@ -35,6 +35,7 @@ def create():
                 password_confirmation=password_confirmation)
 
     if user.save():
+        log_in(user)
         user_url = url_for('.show',id=user.id, _external=True)
         flash('Welcome to the Sample App!', 'success')
         return redirect(user_url)

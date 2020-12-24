@@ -5,7 +5,26 @@
       <ul class="nav navbar-nav navbar-right">
 		<li><a href="{{ url_for('static_pages.home') }}">Home</a></li>
 		<li><a href="{{ url_for('static_pages.help') }}">Help</a></li>
-		<li><a href="#">Log in</a></li>
+		{% if logged_in() %}
+		<li><a href="#">Users</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            Account <b class="caret"></b>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="{{ url_for('users.show', id=current_user().id) }}">
+				Profile
+			</a></li>
+            <li><a href="#">Settings</a></li>
+            <li class="divider"></li>
+            <li>
+              <a href="{{ url_for('sessions.destroy') }}">Log out</a>
+            </li>
+          </ul>
+        </li>
+		{% else %}
+		<li><a href="{{ url_for('sessions.new') }}">Log in</a></li>
+		{% endif %}
       </ul>
     </nav>
   </div>

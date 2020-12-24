@@ -1,20 +1,9 @@
-import pytest
 from flask import render_template
 import re
 from sampleapp.models.user import User
-import time
+from sampleapp.helpers.sessions_helper import logged_in
 
 AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="authenticity_token" value="(.*)"')
-WAIT_UNTIL_DATA_PROCESSED = 5
-
-# 危険なので削除。必要なら手動で行う。
-# @pytest.fixture
-# def delete_all_users_after_test(autouse=True):
-#     yield
-#     users = User.all()
-#     for user in users:
-#         user.destroy()
-#         time.sleep(WAIT_UNTIL_DATA_PROCESSED)
 
 def test_invalid_signup_information(client):
     with client:
@@ -33,7 +22,6 @@ def test_invalid_signup_information(client):
                             'password': user.password,
                             'password_confirmation': user.password_confirmation,
                             'authenticity_token': token})
-        time.sleep(WAIT_UNTIL_DATA_PROCESSED)
         after_count = User.count()
         assert before_count == after_count
 
@@ -47,33 +35,35 @@ def test_invalid_signup_information(client):
         assert response.data == ref
 
 def test_valid_signup_information(client):
+    valid_email = 'user2@example.com'
     with client:
-        response = client.get('/signup')
-        contents = response.data.decode(encoding='utf-8')
-        m = AUTHENTICITY_TOKEN_PATTERN.search(contents)
-        assert len(m.groups()) == 1
-        token = m.groups()[0]
+        try:
+            response = client.get('/signup')
+            contents = response.data.decode(encoding='utf-8')
+            m = AUTHENTICITY_TOKEN_PATTERN.search(contents)
+            assert len(m.groups()) == 1
+            token = m.groups()[0]
 
-        before_count = User.count()
-        user = User(name='Example User', email='user@example.com',
-                    password='password', password_confirmation='password')
-        response = client.post(
-            '/users', data={'name': user.name,
-                            'email': user.email,
-                            'password': user.password,
-                            'password_confirmation': user.password_confirmation,
-                            'authenticity_token': token},
-            follow_redirects=True)
-        time.sleep(WAIT_UNTIL_DATA_PROCESSED)
-        after_count = User.count()
-        assert before_count+1 == after_count
+            before_count = User.count()
+            user = User(name='Example User', email=valid_email,
+                        password='password', password_confirmation='password')
+            response = client.post(
+                '/users', data={'name': user.name,
+                                'email': user.email,
+                                'password': user.password,
+                                'password_confirmation': user.password_confirmation,
+                                'authenticity_token': token},
+                follow_redirects=True)
+            after_count = User.count()
+            assert before_count+1 == after_count
 
-        user.valid()
-        ref = render_template(
-            'users/show.html',user=user).encode(encoding='utf-8')
-        assert response.data == ref
-
-        # 登録したユーザーを削除
-        users = User.find_by('email', 'user@example.com')
-        if users:
-            users[0].destroy()
+            user.valid()
+            ref = render_template(
+                'users/show.html',user=user).encode(encoding='utf-8')
+            assert response.data == ref
+            assert logged_in()
+        finally:
+            # 登録したユーザーを削除
+            users = User.find_by('email', valid_email)
+            if users:
+                users[0].destroy()

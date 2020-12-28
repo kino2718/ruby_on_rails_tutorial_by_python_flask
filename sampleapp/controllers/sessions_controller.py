@@ -2,7 +2,8 @@ from flask import (Blueprint, render_template, session, request, abort,
                    redirect, url_for, flash)
 import secrets
 from ..models.user import User
-from ..helpers.application_helper import csrf_token, check_csrf_token
+from ..helpers.application_helper import (csrf_token, check_csrf_token,
+                                          check_csrf_token_meta_tag)
 from ..helpers.sessions_helper import log_in, log_out
 
 bp = Blueprint('sessions', __name__, url_prefix='')
@@ -33,8 +34,13 @@ def create():
     flash('Invalid email/password combination', 'danger')
     return render_template('sessions/new.html', csrf_token=csrf_token)
 
-# ToDo: 取り敢えずGET methodを使う。後でDELETE methodに切り替える
-@bp.route('/logout', methods=['GET'])
+# request.methodは書き換え不可なのでPOSTで受信しここで_methodをチェックする
+@bp.route('/logout', methods=['POST'])
 def destroy():
-    log_out()
+    method = request.form['_method']
+    csrf_token = check_csrf_token_meta_tag()
+    if not csrf_token:
+        abort(422)
+    if method == 'delete':
+        log_out()
     return redirect(url_for('static_pages.home', _external=True))

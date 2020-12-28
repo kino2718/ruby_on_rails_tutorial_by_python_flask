@@ -18,7 +18,7 @@
             <li><a href="#">Settings</a></li>
             <li class="divider"></li>
             <li>
-              <a href="{{ url_for('sessions.destroy') }}">Log out</a>
+              <a rel="nofollow" data-method="delete" href="{{ url_for('sessions.destroy') }}">Log out</a>
             </li>
           </ul>
         </li>

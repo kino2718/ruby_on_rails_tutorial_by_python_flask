@@ -5,7 +5,7 @@ from sampleapp.helpers.sessions_helper import logged_in
 
 AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="authenticity_token" value="(.*)"')
 
-def test_invalid_signup_information(client):
+def test_invalid_signup_information(client, are_same_templates):
     with client:
         response = client.get('/signup')
         contents = response.data.decode(encoding='utf-8')
@@ -29,12 +29,11 @@ def test_invalid_signup_information(client):
                     password='foo', password_confirmation='bar')
         user.valid()
         ref = render_template(
-            'users/new.html',user=user,csrf_token=token).encode(encoding='utf-8')
-        #print(f'**** response ****\n{response.data}')
-        #print(f'**** ref ****\n{ref}')
-        assert response.data == ref
+            'users/new.html',user=user,csrf_token=token)
+        contents = response.data.decode(encoding='utf-8')
+        assert are_same_templates(ref, contents)
 
-def test_valid_signup_information(client):
+def test_valid_signup_information(client, are_same_templates):
     valid_email = 'user2@example.com'
     with client:
         try:
@@ -58,9 +57,9 @@ def test_valid_signup_information(client):
             assert before_count+1 == after_count
 
             user.valid()
-            ref = render_template(
-                'users/show.html',user=user).encode(encoding='utf-8')
-            assert response.data == ref
+            ref = render_template('users/show.html',user=user)
+            contents = response.data.decode(encoding='utf-8')
+            assert are_same_templates(ref, contents)
             assert logged_in()
         finally:
             # 登録したユーザーを削除

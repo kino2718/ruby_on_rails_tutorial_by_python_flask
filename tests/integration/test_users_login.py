@@ -1,10 +1,11 @@
 import pytest
-from flask import render_template, get_flashed_messages
+from flask import render_template, get_flashed_messages, session
 import re
 from sampleapp.models.user import User
 from sampleapp.helpers.sessions_helper import logged_in
 
 AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="authenticity_token" value="(.*)"')
+META_TAG_AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="csrf-token" content="(.*)"')
 
 # テスト用のユーザーをデータベースに追加。テストが終了したら削除。
 @pytest.fixture
@@ -28,7 +29,8 @@ def test_user():
             print(f'**** destroy user ****')
             test_user.destroy()
 
-def  test_login_with_valid_email_invalid_password(client, test_user):
+def  test_login_with_valid_email_invalid_password(client, test_user,
+                                                  are_same_templates):
     with client:
         # ログインページの表示
         response = client.get('/login')
@@ -38,7 +40,9 @@ def  test_login_with_valid_email_invalid_password(client, test_user):
         token = m.groups()[0]
         # ログインページが表示されたことを確認
         ref = render_template('sessions/new.html', csrf_token=token)
-        assert response.data == ref.encode(encoding='utf-8')
+        assert are_same_templates(
+            ref,
+            response.data.decode(encoding='utf-8'))
 
         # 無効なデータでログインを行う
         response = client.post(
@@ -49,7 +53,9 @@ def  test_login_with_valid_email_invalid_password(client, test_user):
         assert not logged_in()
         # ログインページに戻されることを確認
         ref = render_template('sessions/new.html', csrf_token=token)
-        assert response.data == ref.encode(encoding='utf-8')
+        assert are_same_templates(
+            ref,
+            response.data.decode(encoding='utf-8'))
 
         # flashメッセージが存在することを確認
         flashed_message = get_flashed_messages()
@@ -60,7 +66,8 @@ def  test_login_with_valid_email_invalid_password(client, test_user):
         flashed_message = get_flashed_messages()
         assert not flashed_message
 
-def test_login_with_valid_information(client, test_user):
+def test_login_with_valid_information(client, test_user,
+                                      are_same_templates):
     with client:
         # ログインページの表示
         response = client.get('/login')
@@ -81,7 +88,8 @@ def test_login_with_valid_information(client, test_user):
 
         # redirectされていることを確認
         ref = render_template('users/show.html', user=test_user)
-        assert response.data == ref.encode(encoding='utf-8')
+        contents = response.data.decode(encoding='utf-8')
+        assert are_same_templates(ref, contents)
 
         # login へのリンクが無いことを確認
         m = re.search(r'<a.*href="/login"', response.data.decode('utf-8'))
@@ -95,15 +103,28 @@ def test_login_with_valid_information(client, test_user):
         m = re.search(rf'<a.*(href="/users/{test_user.id}")', response.data.decode('utf-8'))
         assert m
 
-        # ログアウトを実行
-        response = client.get('/logout', follow_redirects=True)
+        # ログアウト
+        # meta tagのcsrf tokenを取得
+        m = META_TAG_AUTHENTICITY_TOKEN_PATTERN.search(contents)
+        assert len(m.groups()) == 1
+        token = m.groups()[0]
+        session['csrf_token_meta_tag'] = token
+        response = client.post(
+            '/logout',
+            data = {
+                '_method': 'delete',
+                'authenticity_token': token
+                },
+            follow_redirects=True)
 
         # ログアウトしたことを確認
         assert not logged_in()
 
         # Homeページへリダイレクトしたことを確認
         ref = render_template('static_pages/home.html')
-        assert response.data == ref.encode(encoding='utf-8')
+        assert are_same_templates(
+            ref,
+            response.data.decode(encoding='utf-8'))
 
         # login へのリンクがあることを確認
         m = re.search(r'<a.*href="/login"', response.data.decode('utf-8'))

@@ -1,6 +1,7 @@
 from flask import render_template
+from common import are_same_templates
 
-def test_layout_links(client, are_same_templates):
+def test_layout_links(client):
     with client:
         response = client.get('/')
         assert are_same_templates(

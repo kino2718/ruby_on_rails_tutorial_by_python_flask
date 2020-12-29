@@ -1,11 +1,9 @@
 from flask import render_template
 import re
 from sampleapp.models.user import User
-from sampleapp.helpers.sessions_helper import logged_in
+from common import is_logged_in, are_same_templates, AUTHENTICITY_TOKEN_PATTERN
 
-AUTHENTICITY_TOKEN_PATTERN = re.compile(r'name="authenticity_token" value="(.*)"')
-
-def test_invalid_signup_information(client, are_same_templates):
+def test_invalid_signup_information(client):
     with client:
         response = client.get('/signup')
         contents = response.data.decode(encoding='utf-8')
@@ -33,7 +31,7 @@ def test_invalid_signup_information(client, are_same_templates):
         contents = response.data.decode(encoding='utf-8')
         assert are_same_templates(ref, contents)
 
-def test_valid_signup_information(client, are_same_templates):
+def test_valid_signup_information(client):
     valid_email = 'user2@example.com'
     with client:
         try:
@@ -60,7 +58,7 @@ def test_valid_signup_information(client, are_same_templates):
             ref = render_template('users/show.html',user=user)
             contents = response.data.decode(encoding='utf-8')
             assert are_same_templates(ref, contents)
-            assert logged_in()
+            assert is_logged_in()
         finally:
             # 登録したユーザーを削除
             users = User.find_by('email', valid_email)

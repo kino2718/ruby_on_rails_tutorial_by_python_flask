@@ -5,6 +5,7 @@ import copy
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from .errors import Errors
+import secrets
 
 class User:
     KIND_EMAILS = 'emails'
@@ -21,6 +22,8 @@ class User:
         self.password = kwargs.get('password')
         self.password_confirmation = kwargs.get('password_confirmation')
         self.password_digest = kwargs.get('password_digest')
+        self.remember_token = kwargs.get('remember_token')
+        self.remember_digest = kwargs.get('remember_digest')
         self.errors = Errors()
 
     def __repr__(self):
@@ -30,7 +33,9 @@ class User:
             f'updated_at={self.updated_at.__repr__()}, ' +\
             f'password={self.password.__repr__()}, ' +\
             f'password_confirmation={self.password_confirmation.__repr__()}, ' +\
-            f'password_digest={self.password_digest.__repr__()})'
+            f'password_digest={self.password_digest.__repr__()}, ' +\
+            f'remember_token={self.remember_token.__repr__()}, ' +\
+            f'remember_digest={self.remember_digest.__repr__()})'
 
     def __str__(self):
         return f'User(id={self.id}, name={self.name}, email={self.email}, ' +\
@@ -38,7 +43,20 @@ class User:
             f'updated_at={self.updated_at}, ' +\
             f'password={self.password}, ' +\
             f'password_confirmation={self.password_confirmation}, ' +\
-            f'password_digest={self.password_digest})'
+            f'password_digest={self.password_digest}, ' +\
+            f'remember_token={self.remember_token}, ' +\
+            f'remember_digest={self.remember_digest})'
+
+    def __eq__(self, other):
+        # created_at, updated_atはdatetime.datetime型と
+        # google.api_core.datetime_helpers.DatetimeWithNanoseconds型を
+        # 取るので比較には用いない。手抜き
+        return \
+            self.id==other.id and \
+            self.name==other.name and \
+            self.email==other.email and \
+            self.password_digest==other.password_digest and \
+            self.remember_digest==other.remember_digest
 
     def valid(self):
         self.errors = Errors()
@@ -75,21 +93,6 @@ class User:
         #     print(f'Invalid: {self}. {self.errors}')
         return v
 
-    # decorator
-    def _must_be_valid(f):
-        def wrapper(self, *args, **kwargs):
-            if not self.valid():
-                return False
-            return f(self, *args, **kwargs)
-        return wrapper
-
-    # decorator
-    def _email_to_lower(f):
-        def wrapper(self, *args, **kwargs):
-            self.email = self.email.lower()
-            return f(self, *args, **kwargs)
-        return wrapper
-
     def _check_email_unique_and_insert(self, client, key):
         # print(f'{self.name}: {self.email}登録開始')
         # emailアドレスが既に登録されているか確認
@@ -107,52 +110,33 @@ class User:
         client.put(entity)
         return True
 
-    def _insert_user(self, client, key):
-        # print(f'{self.name}: ユーザー登録開始')
-        user = datastore.Entity(key)
+    def _insert_or_update_user(self, client, user):
         t = datetime.utcnow()
-        # password_digest を作成
-        digest = generate_password_hash(self.password)
-        user.update({
-            'name': self.name,
-            'email': self.email,
-            'created_at': t,
-            'updated_at': t,
-            'password_digest': digest
-        })
+        user['name'] =  self.name
+        user['email'] = self.email
+        if not self.id:
+            #新規登録
+            user['created_at'] = t
+        user['updated_at'] = t
+        user['password_digest'] = self.password_digest
+        user['remember_digest'] = self.remember_digest
+
         client.put(user)
         self.created_at = user['created_at']
         self.updated_at = user['updated_at']
         self.password_digest = user['password_digest']
+        self.remember_digest = user['remember_digest']
         return user
 
-    def _update_user(self, client, user):
-        # print(f'{self.name}: ユーザー登録更新')
-        t = datetime.utcnow()
-        # password_digest を作成
-        digest = generate_password_hash(self.password)
-        user.update({
-            'name': self.name,
-            'email': self.email,
-            'updated_at': t,
-            'password_digest': digest
-        })
-        client.put(user)
-        self.updated_at = user['updated_at']
-        self.password_digest = user['password_digest']
-        return user
-
-    @_email_to_lower
-    @_must_be_valid
     def _insert(self):
         client = datastore.Client()
-        email_key = client.key(User.KIND_EMAILS, self.email)
-        user_key = client.key(User.KIND_USERS)
-        user = None
         try:
             with client.transaction():
+                email_key = client.key(User.KIND_EMAILS, self.email)
+                user_key = client.key(User.KIND_USERS)
+                user = datastore.Entity(user_key)
                 if self._check_email_unique_and_insert(client, email_key):
-                    user = self._insert_user(client, user_key)
+                    user = self._insert_or_update_user(client, user)
         except Aborted as e:
             # transaction競合のため失敗
             # print(f'{self.name}: 例外発生: {type(e)} {e}')
@@ -166,8 +150,6 @@ class User:
         # print(f'{self.name}: ユーザー登録終了')
         return True
 
-    @_email_to_lower
-    @_must_be_valid
     def _update(self):
         client = datastore.Client()
         user_key = client.key(User.KIND_USERS, self.id)
@@ -182,7 +164,7 @@ class User:
                     # 新しいメールアドレスをチェックしてユーザー情報をアップデート
                     email_key = client.key(User.KIND_EMAILS, self.email)
                     if self._check_email_unique_and_insert(client, email_key):
-                        self._update_user(client, user)
+                        self._insert_or_update_user(client, user)
             except Aborted as e:
                 # transaction競合のため失敗
                 # print(f'{self.name}: 例外発生: {type(e)} {e}')
@@ -190,10 +172,21 @@ class User:
                 return False
         else:
             # print('update: メールアドレスが同じ')
-            self._update_user(client, user)
+            self._insert_or_update_user(client, user)
         return True
 
     def save(self):
+        # email を小文字に変換する
+        if self.email is not None:
+            self.email = self.email.lower()
+
+        # user属性の有効性をチェックする
+        if not self.valid():
+            return False
+
+        # password_digest を作成
+        self.password_digest = User.digest(self.password)
+
         # idが存在する時はupdate、存在しない時はinsertを行う
         if self.id:
             return self._update()
@@ -213,6 +206,7 @@ class User:
                     temp.name = v
                     dirty = True
             elif k == 'email':
+                # email を小文字に変換する
                 if temp.email.lower() != v.lower():
                     temp.email = v.lower()
                     dirty = True
@@ -227,7 +221,14 @@ class User:
             else:
                 raise AttributeError(f'{k} key is bad')
 
+        # 変更する属性の有効性をチェックする
+        if not temp.valid():
+            self.errors = temp.errors
+            return False
+
         if dirty:
+            # password_digest を作成
+            tmp.password_digest = User.digest(temp.password)
             if temp._update():
                 self.name = temp.name
                 self.email = temp.email
@@ -236,8 +237,43 @@ class User:
                 self.password_confirmation = temp.password_confirmation
                 self.password_digest = temp.password_digest
                 return True
+        return False
+
+    def update_attribute(self, **kwargs):
+        if len(kwargs) == 0:
+            return True
+
+        temp = copy.copy(self)
+        dirty = False
+        for k,v in kwargs.items():
+            if k == 'name':
+                if temp.name != v:
+                    temp.name = v
+                    dirty = True
+            elif k == 'email':
+                # email を小文字に変換する
+                if temp.email.lower() != v.lower():
+                    temp.email = v.lower()
+                    dirty = True
+            elif k == 'password_digest':
+                if temp.password_digest != v:
+                    temp.password_digest = v
+                    dirty = True
+            elif k == 'remember_digest':
+                if temp.remember_digest != v:
+                    temp.remember_digest = v
+                    dirty = True
             else:
-                self.errors = temp.errors
+                raise AttributeError(f'{k} key is bad')
+
+        if dirty:
+            if temp._update():
+                self.name = temp.name
+                self.email = temp.email
+                self.updated_at = temp.updated_at
+                self.password_digest = temp.password_digest
+                self.remember_digest = temp.remember_digest
+                return True
         return False
 
     @classmethod
@@ -297,6 +333,28 @@ class User:
         if check_password_hash(self.password_digest, p):
             return self
         return None
+
+    def authenticated_by_remember_token(self, remember_token):
+        if not self.remember_digest:
+            return False
+        return check_password_hash(self.remember_digest, remember_token)
+
+    @staticmethod
+    def digest(string):
+        return generate_password_hash(string)
+
+    @staticmethod
+    def new_token():
+        token = secrets.token_urlsafe()
+        return token
+
+    def remember(self):
+        self.remember_token = User.new_token()
+        digest = User.digest(self.remember_token)
+        self.update_attribute(remember_digest=digest)
+
+    def forget(self):
+        self.update_attribute(remember_digest=None)
 
     def _does_email_exist(self):
         client = datastore.Client()

@@ -20,8 +20,6 @@ def csrf_token():
 def check_csrf_token():
     csrf_token = request.form.get(_AUTHENTICITY_TOKEN)
     right_csrf_token = session[_CSRF_TOKEN]
-    if right_csrf_token:
-        del session[_CSRF_TOKEN]
     if csrf_token and (csrf_token == right_csrf_token):
         return csrf_token
     else:
@@ -30,8 +28,6 @@ def check_csrf_token():
 def check_csrf_token_meta_tag():
     csrf_token = request.form.get(_AUTHENTICITY_TOKEN)
     right_csrf_token = session[_CSRF_TOKEN_META_TAG]
-    if right_csrf_token:
-        del session[_CSRF_TOKEN_META_TAG]
     if csrf_token and (csrf_token == right_csrf_token):
         return csrf_token
     else:

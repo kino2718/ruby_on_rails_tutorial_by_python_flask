@@ -9,11 +9,35 @@ def template_functions():
         user_name = html.escape(user.name, quote=True)
         return f'<img src="{gravatar_url}" alt="{user_name}" class="gravatar"/>'
 
-    def emphasize_error_field(user, name, contents):
+    def make_form_label(user, name, contents):
+        prefix = suffix = ''
         if user.errors.has_errors_with(name):
-            return f'<div class="has-error field_with_errors">{contents}</div>'
+            prefix = '<div class="has-error field_with_errors">'
+            suffix = '</div>'
+        name = html.escape(name, quote=True)
+        contents = html.escape(contents, quote=True)
+        s = f'<label for="user_{name}">{contents}</label>'
+        return prefix + s + suffix
+
+    def make_form_input(user, el_type, name, el_id):
+        prefix = suffix = ''
+        if user.errors.has_errors_with(name):
+            prefix = '<div class="has-error field_with_errors">'
+            suffix = '</div>'
+        value = getattr(user, name, None)
+
+        el_type = html.escape(el_type, quote=True)
+        name = html.escape(name, quote=True)
+        el_id = html.escape(el_id, quote=True)
+        s1 = f'<input type="{el_type}" '
+        s2 = f'name="{name}" id="{el_id}" class="form-control" />'
+        if (value is not None) and (el_type != 'password'):
+            value = html.escape(value, quote=True)
+            s = s1 + f'value="{value}" ' + s2
         else:
-            return contents
+            s = s1 + s2
+        return prefix + s + suffix
 
     return dict(gravatar_for=gravatar_for,
-                emphasize_error_field=emphasize_error_field)
+                make_form_label=make_form_label,
+                make_form_input=make_form_input)

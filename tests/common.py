@@ -27,9 +27,7 @@ def log_in_as(client, email, password='password', remember_me='1'):
 
     # ログインページが表示されたことを確認
     ref = render_template('sessions/new.html', csrf_token=token)
-    assert are_same_templates(
-        ref,
-        response.data.decode(encoding='utf-8'))
+    assert are_same_templates(ref, contents)
 
     # ログインを行う
     if remember_me == '1':

@@ -1,25 +1,7 @@
 import pytest
 from flask import render_template, get_flashed_messages, request
 import re
-from sampleapp.models.user import User
 from common import is_logged_in, are_same_templates, log_in_as, log_out
-
-# テスト用のユーザーをデータベースに追加。テストが終了したら削除。
-@pytest.fixture
-def test_user():
-    test_user = None
-    try:
-        user = User(name='foobar',
-                    email='foo@bar.com',
-                    password='password',
-                    password_confirmation='password')
-        if user.save():
-            users = User.find_by('email', 'foo@bar.com')
-            test_user = users[0]
-        yield test_user
-    finally:
-        if test_user:
-            test_user.destroy()
 
 def  test_login_with_valid_email_invalid_password(client, test_user):
     with client:

@@ -79,13 +79,38 @@ class User:
         if self._does_email_exist():
             v = False
             self.errors.add('email', 'email has already been taken')
-        if (not self.password) or (not self.password.strip()):
-            v = False
-            self.errors.add('password', "password can't be blank")
-        if self.password and (len(self.password) < 6):
-            v = False
-            self.errors.add('password', 'password is too short')
-        if self.password != self.password_confirmation:
+
+        good_password = True
+        if self.id:
+            # 既存ユーザー。passwordブランクは許されるので
+            # passwordに値が入っている場合のみチェック
+            if self.password:
+                if not self.password.strip():
+                    # passwordが全て空白
+                    good_password = False
+                    v = False
+                    self.errors.add('password', "password can't be blank")
+                else:
+                    if len(self.password) < 6:
+                        # passwordの長さが6文字未満
+                        good_password = False
+                        v = False
+                        self.errors.add('password', 'password is too short')
+        else:
+            # 新規ユーザー
+            if not self.password or not self.password.strip():
+                # passwordが空又はNone又は全て空白
+                good_password = False
+                v = False
+                self.errors.add('password', "password can't be blank")
+            else:
+                if len(self.password) < 6:
+                    # passwordの長さが文字未満
+                    good_password = False
+                    v = False
+                    self.errors.add('password', 'password is too short')
+
+        if good_password and self.password != self.password_confirmation:
             v = False
             self.errors.add('password_confirmation', "password confirmation doesn't match password")
 
@@ -227,8 +252,9 @@ class User:
             return False
 
         if dirty:
-            # password_digest を作成
-            tmp.password_digest = User.digest(temp.password)
+            # password_digest を作成。passwordがFalseの時は以前のままにする
+            if self.password:
+                temp.password_digest = User.digest(temp.password)
             if temp._update():
                 self.name = temp.name
                 self.email = temp.email
@@ -281,6 +307,20 @@ class User:
         user = cls(**kwargs)
         user.save()
         return user
+
+    def reload(self):
+        user = User.find(self.id)
+        self.name = user.name
+        self.email = user.email
+        self.created_at = user.created_at
+        self.updated_at = user.updated_at
+        self.password = user.password
+        self.password_confirmation = user.password_confirmation
+        self.password_digest = user.password_digest
+        self.remember_token = user.remember_token
+        self.remember_digest = user.remember_digest
+        self.errors = user.errors
+        return self
 
     def destroy(self):
         client = datastore.Client()

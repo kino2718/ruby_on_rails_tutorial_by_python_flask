@@ -41,3 +41,45 @@ def create():
         return redirect(user_url)
     else:
         return render_template('users/new.html', user=user, csrf_token=csrf_token)
+
+@bp.route('/<int:id>/edit')
+def edit(id):
+    user = User.find(id)
+    if user is None:
+        abort(404)
+    token = csrf_token()
+    return render_template('users/edit.html', user=user, csrf_token=token)
+
+@bp.route('/<int:id>', methods=['POST'])
+def handle_method(id):
+    # formの_method要素の値でメソッドを判断する
+    method = request.form.get('_method').lower()
+    if method == 'patch':
+        return update(id)
+
+    # 対応していないメソッドだったらユーザーの情報を表示するページにリダイレクト
+    user_url = url_for('.show',id=id, _external=True)
+    return redirect(user_url)
+
+def update(id):
+    # CSRF対策
+    csrf_token = check_csrf_token()
+    if not csrf_token:
+        abort(422)
+
+    user = User.find(id)
+    if user is None:
+        abort(404)
+
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
+    password_confirmation = request.form['password_confirmation']
+
+    if user.update(name=name, email=email, password=password,
+                password_confirmation=password_confirmation):
+        user_url = url_for('.show',id=user.id, _external=True)
+        flash('Profile updated', 'success')
+        return redirect(user_url)
+    else:
+        return render_template('users/edit.html', user=user, csrf_token=csrf_token)

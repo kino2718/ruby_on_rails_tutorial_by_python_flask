@@ -49,16 +49,16 @@ def log_in_as(client, email, password='password', remember_me='1'):
     return response
 
 def log_out(client, current_contents):
-        # meta tagのcsrf tokenを取得
-        m = META_TAG_AUTHENTICITY_TOKEN_PATTERN.search(current_contents)
-        assert len(m.groups()) == 1
-        token = m.groups()[0]
-        session['csrf_token_meta_tag'] = token
-        response = client.post(
-            '/logout',
-            data = {
-                '_method': 'delete',
-                'authenticity_token': token
-                },
-            follow_redirects=True)
-        return response
+    # meta tagのcsrf tokenを取得
+    m = META_TAG_AUTHENTICITY_TOKEN_PATTERN.search(current_contents)
+    assert len(m.groups()) == 1
+    token = m.groups()[0]
+    session['csrf_token_meta_tag'] = token
+    response = client.post(
+        '/logout',
+        data = {
+            '_method': 'delete',
+            'authenticity_token': token
+        },
+        follow_redirects=True)
+    return response

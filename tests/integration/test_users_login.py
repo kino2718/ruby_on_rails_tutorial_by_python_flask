@@ -3,7 +3,8 @@ from flask import render_template, get_flashed_messages, request
 import re
 from common import is_logged_in, are_same_templates, log_in_as, log_out
 
-def  test_login_with_valid_email_invalid_password(client, test_user):
+def  test_login_with_valid_email_invalid_password(client, test_users):
+    test_user = test_users['michael']
     with client:
         # 無効なデータでログインを行う
         response = log_in_as(client, test_user.email, password='')
@@ -26,7 +27,8 @@ def  test_login_with_valid_email_invalid_password(client, test_user):
         flashed_message = get_flashed_messages()
         assert not flashed_message
 
-def test_login_with_valid_information_followed_by_logout(client, test_user):
+def test_login_with_valid_information_followed_by_logout(client, test_users):
+    test_user = test_users['michael']
     with client:
         # 登録ユーザーでログインを行う
         response = log_in_as(client, test_user.email, 'password')
@@ -79,12 +81,14 @@ def test_login_with_valid_information_followed_by_logout(client, test_user):
         m = re.search(rf'<a.*(href="/users/{test_user.id}")', response.data.decode('utf-8'))
         assert not m
 
-def test_login_with_remembering(client, test_user):
+def test_login_with_remembering(client, test_users):
+    test_user = test_users['michael']
     with client:
         log_in_as(client, test_user.email, remember_me='1')
         assert request.cookies.get('remember_token')
 
-def test_login_without_remembering(client, test_user):
+def test_login_without_remembering(client, test_users):
+    test_user = test_users['michael']
     with client:
         # cookieを保存してログイン
         response = log_in_as(client, test_user.email, remember_me='1')

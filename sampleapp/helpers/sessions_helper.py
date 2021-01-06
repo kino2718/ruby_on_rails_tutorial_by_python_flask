@@ -1,4 +1,4 @@
-from flask import g, session, current_app, request
+from flask import g, session, current_app, request, redirect
 from ..models.user import User
 from datetime import datetime, timedelta
 from itsdangerous import URLSafeSerializer
@@ -67,12 +67,29 @@ def current_user():
 
         return None
 
+# 渡されたユーザーがカレントユーザーであればtrueを返す
+def is_current_user(user):
+    if user and user == current_user():
+        return True
+    else:
+        return False
+
 def logged_in():
     if current_user():
         return True
     else:
         return False
 
-def template_functions():
+# 記憶したURL（もしくはデフォルト値）にリダイレクト
+def redirect_back_or(default):
+    url = session.get('forwarding_url') or default
+    session.pop('forwarding_url', None)
+    return redirect(url)
 
+# アクセスしようとしたURLを覚えておく
+def store_location():
+    if request.method.lower() == 'get':
+        session['forwarding_url'] = request.url
+
+def template_functions():
     return dict(current_user=current_user, logged_in=logged_in)

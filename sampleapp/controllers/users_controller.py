@@ -2,12 +2,35 @@ from flask import (Blueprint, render_template, session, request, abort,
                    redirect, url_for, flash)
 from ..models.user import User
 from ..helpers.application_helper import csrf_token, check_csrf_token
-from ..helpers.sessions_helper import log_in
+from ..helpers.sessions_helper import (log_in, logged_in, is_current_user,
+                                       store_location)
 import secrets
+import functools
 
 bp = Blueprint('users', __name__, url_prefix='/users')
 
-_CSRF_TOKEN= 'csrf_token'
+# decorator
+def logged_in_user(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if not logged_in():
+            store_location()
+            flash('Please log in', 'danger')
+            login_url = url_for('sessions.new', _external=True)
+            return redirect(login_url)
+        return f(*args, **kwargs)
+    return wrapper
+
+# decorator
+def correct_user(f):
+    @functools.wraps(f)
+    def wrapper(id, *args, **kwargs):
+        user = User.find(id)
+        if not is_current_user(user):
+            user_url = url_for('static_pages.home', _external=True)
+            return redirect(user_url)
+        return f(id, *args, **kwargs)
+    return wrapper
 
 @bp.route('/<int:id>')
 def show(id):
@@ -43,6 +66,8 @@ def create():
         return render_template('users/new.html', user=user, csrf_token=csrf_token)
 
 @bp.route('/<int:id>/edit')
+@logged_in_user
+@correct_user
 def edit(id):
     user = User.find(id)
     if user is None:
@@ -61,6 +86,8 @@ def handle_method(id):
     user_url = url_for('.show',id=id, _external=True)
     return redirect(user_url)
 
+@logged_in_user
+@correct_user
 def update(id):
     # CSRF対策
     csrf_token = check_csrf_token()

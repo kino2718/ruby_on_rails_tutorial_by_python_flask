@@ -1,0 +1,4 @@
+<li>
+  {{ gravatar_for(user, size=50)|safe }}
+  <a href="{{ url_for('users.show', id=user.id) }}">{{ user.name }}</a>
+</li>

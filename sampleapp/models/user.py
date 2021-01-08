@@ -360,12 +360,36 @@ class User:
     def all():
         client = datastore.Client()
         query = client.query(kind=User.KIND_USERS)
+        query.order = ['created_at']
         entities = list(query.fetch())
         users = [User(id=entity.key.id, **entity) for entity in entities]
         return users
 
     @staticmethod
+    def paginate(page=None):
+        if page is None:
+            page = 1
+        elif page < 1:
+            raise IndexError('paginate: page must be greater than or equal to 1')
+        limit = 30
+        offset = (page-1)*limit
+        client = datastore.Client()
+        query = client.query(kind=User.KIND_USERS)
+        query.order = ['created_at']
+        entities = list(query.fetch(limit=limit, offset=offset))
+        users = [User(id=entity.key.id, **entity) for entity in entities]
+        return users
+
+    @staticmethod
     def count():
+        # 統計情報はリアルタイムで反映されないので使用できない
+        # client = datastore.Client()
+        # key = client.key('__Stat_Kind__', 'emails')
+        # entity = client.get(key)
+        # if entity is not None:
+        #     count = entity.get('count')
+        #     if count is not None:
+        #         return count
         users = User.all()
         return len(users)
 

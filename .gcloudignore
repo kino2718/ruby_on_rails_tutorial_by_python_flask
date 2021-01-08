@@ -25,3 +25,4 @@ tests/
 /setup.py
 /MANIFEST.in
 /setup_env
+/db/

@@ -7,3 +7,16 @@ archer:
   name: Sterling Archer
   email: duchess@example.gov
   password: 'password'
+
+lana:
+  name: Lana Kane
+  email: hands@example.gov
+  password: 'password'
+
+malory:
+  name: Malory Archer
+  email: boss@example.gov
+  password: 'password'
+
+# users_index_test.pyのテストでユーザーが30人以上必要だが
+# それはdb/seeds.py等で別に作成する

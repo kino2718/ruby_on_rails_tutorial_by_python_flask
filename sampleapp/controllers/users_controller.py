@@ -6,6 +6,7 @@ from ..helpers.sessions_helper import (log_in, logged_in, is_current_user,
                                        store_location)
 import secrets
 import functools
+from flask_paginate import Pagination, get_page_parameter
 
 bp = Blueprint('users', __name__, url_prefix='/users')
 
@@ -31,6 +32,26 @@ def correct_user(f):
             return redirect(user_url)
         return f(id, *args, **kwargs)
     return wrapper
+
+@bp.route('/')
+@logged_in_user
+def index():
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 30
+    # 全ユーザー数を取得するUser.countメソッドでどのみちUser.allを呼び出すので
+    # paginateは使用しないでUser.allを使用する
+    #users = User.paginate(page)
+    users = User.all()
+    total = len(users)
+    users = users[(page-1)*per_page:page*per_page]
+    # User.paginateを使う場合
+    # pagination = Pagination(page=page, total=User.count(), per_page=per_page,
+    #                         prev_label='&larr; Previous', next_label='Next &rarr;',
+    #                         css_framework='bootstrap3')
+    pagination = Pagination(page=page, total=total, per_page=per_page,
+                            prev_label='&larr; Previous', next_label='Next &rarr;',
+                            css_framework='bootstrap3')
+    return render_template('users/index.html', users=users, pagination=pagination)
 
 @bp.route('/<int:id>')
 def show(id):

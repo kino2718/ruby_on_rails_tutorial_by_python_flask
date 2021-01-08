@@ -1,0 +1,15 @@
+{% extends 'layouts/application.html' %}
+{% set title = 'All users' %}
+{% block content %}
+<h1>All users</h1>
+
+{{ pagination.links }}
+
+<ul class="users">
+  {% for user in users %}
+  {% include 'users/user.html' %}
+  {% endfor %}
+</ul>
+
+{{ pagination.links }}
+{% endblock %}

@@ -1,7 +1,6 @@
 from flask import render_template, get_flashed_messages
 from common import AUTHENTICITY_TOKEN_PATTERN, are_same_templates, log_in_as
 from sampleapp.models.user import User
-import copy
 
 def test_unsuccessful_edit(client, test_users):
     user = test_users['michael']

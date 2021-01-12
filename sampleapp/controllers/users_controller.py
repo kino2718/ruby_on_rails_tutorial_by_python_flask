@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, session, request, abort,
 from ..models.user import User
 from ..helpers.application_helper import csrf_token, check_csrf_token
 from ..helpers.sessions_helper import (log_in, logged_in, is_current_user,
-                                       store_location)
+                                       store_location, current_user)
 import secrets
 import functools
 from flask_paginate import Pagination, get_page_parameter
@@ -31,6 +31,17 @@ def correct_user(f):
             user_url = url_for('static_pages.home', _external=True)
             return redirect(user_url)
         return f(id, *args, **kwargs)
+    return wrapper
+
+# decorator
+def admin_user(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        user = current_user()
+        if user and user.admin:
+            return f(*args, **kwargs)
+        user_url = url_for('static_pages.home', _external=True)
+        return redirect(user_url)
     return wrapper
 
 @bp.route('/')
@@ -102,6 +113,8 @@ def handle_method(id):
     method = request.form.get('_method').lower()
     if method == 'patch':
         return update(id)
+    elif method == 'delete':
+        return destroy(id)
 
     # 対応していないメソッドだったらユーザーの情報を表示するページにリダイレクト
     user_url = url_for('.show',id=id, _external=True)
@@ -131,3 +144,15 @@ def update(id):
         return redirect(user_url)
     else:
         return render_template('users/edit.html', user=user, csrf_token=csrf_token)
+
+@logged_in_user
+@admin_user
+def destroy(id):
+    user = User.find(id)
+    if user is None:
+        abort(404)
+
+    user.destroy()
+    flash('User deleted', 'success')
+    users_url = url_for('.index', _external=True)
+    return redirect(users_url)

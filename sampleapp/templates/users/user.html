@@ -1,4 +1,7 @@
 <li>
   {{ gravatar_for(user, size=50)|safe }}
   <a href="{{ url_for('users.show', id=user.id) }}">{{ user.name }}</a>
+  {% if current_user().admin and current_user() != user %}
+  | <a data-confirm="You sure?" rel="nofollow" data-method="delete" href="/users/{{ user.id }}">delete</a>
+  {% endif %}
 </li>

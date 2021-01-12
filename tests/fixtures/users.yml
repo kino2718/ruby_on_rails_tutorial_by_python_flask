@@ -2,6 +2,7 @@ michael:
   name: Michael Example
   email: michael@example.com
   password: 'password'
+  admin: True
 
 archer:
   name: Sterling Archer
@@ -19,4 +20,5 @@ malory:
   password: 'password'
 
 # users_index_test.pyのテストでユーザーが30人以上必要だが
-# それはdb/seeds.py等で別に作成する
+# 開発用のdbとテスト用のdbを分けていないので
+# db/seeds.py等で別に作成する

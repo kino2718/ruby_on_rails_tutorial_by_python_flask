@@ -1,5 +1,6 @@
 from common import AUTHENTICITY_TOKEN_PATTERN, are_same_templates, log_in_as
 from flask import get_flashed_messages, render_template
+from sampleapp.models.user import User
 
 SUCCESS = 200
 
@@ -118,5 +119,63 @@ def test_should_redirect_update_when_logged_in_as_wrong_user(client, test_users)
 
         # homeにredirectされていることを確認
         ref = render_template('static_pages/home.html')
+        assert are_same_templates(ref, contents)
+
+def test_should_redirect_destroy_when_not_logged_in(client, test_users):
+    user = test_users['michael']
+    with client:
+        # csrf tokenをsessionに設定する
+        token = 'token'
+        with client.session_transaction() as sess:
+            sess['csrf_token'] = token
+
+        # ユーザー数を保存する
+        before_count = User.count()
+
+        # delete method を投げる
+        response = client.post(
+            f'/users/{user.id}',
+            data={'_method': 'delete',
+                  'authenticity_token': token},
+            follow_redirects=True)
         contents = response.data.decode(encoding='utf-8')
+
+        # ユーザー数が変わらないことを確認する
+        after_count = User.count()
+        assert before_count == after_count
+
+        # ログイン画面にリダイレクトされていることを確認
+        ref = render_template('sessions/new.html', csrf_token=token)
+        #print(f'\nref:\n{ref}\n\ncontents\n{contents}\n')
+        assert are_same_templates(ref, contents)
+
+def test_should_redirect_destroy_when_logged_in_as_a_non_admin(client, test_users):
+    user = test_users['michael']
+    other_user = test_users['archer']
+    with client:
+        # ログインする
+        log_in_as(client, other_user.email)
+
+        # csrf tokenをsessionに設定する
+        token = 'token'
+        with client.session_transaction() as sess:
+            sess['csrf_token'] = token
+
+        # ユーザー数を保存する
+        before_count = User.count()
+
+        # delete method を投げる
+        response = client.post(
+            f'/users/{user.id}',
+            data={'_method': 'delete',
+                  'authenticity_token': token},
+            follow_redirects=True)
+        contents = response.data.decode(encoding='utf-8')
+
+        # ユーザー数が変わらないことを確認する
+        after_count = User.count()
+        assert before_count == after_count
+
+        # homeにredirectされていることを確認
+        ref = render_template('static_pages/home.html')
         assert are_same_templates(ref, contents)

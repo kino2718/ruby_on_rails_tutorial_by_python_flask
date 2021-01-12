@@ -27,8 +27,9 @@ def test_users():
             name=v['name']
             email=v['email']
             password = v['password']
+            admin = v.get('admin', False)
             user = User(name=name, email=email, password=password,
-                        password_confirmation=password)
+                        password_confirmation=password, admin=admin)
             if user.save():
                 user.reload()
                 test_users[k] = user

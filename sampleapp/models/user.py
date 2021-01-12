@@ -24,6 +24,7 @@ class User:
         self.password_digest = kwargs.get('password_digest')
         self.remember_token = kwargs.get('remember_token')
         self.remember_digest = kwargs.get('remember_digest')
+        self.admin = kwargs.get('admin', False)
         self.errors = Errors()
 
     def __repr__(self):
@@ -35,7 +36,8 @@ class User:
             f'password_confirmation={self.password_confirmation.__repr__()}, ' +\
             f'password_digest={self.password_digest.__repr__()}, ' +\
             f'remember_token={self.remember_token.__repr__()}, ' +\
-            f'remember_digest={self.remember_digest.__repr__()})'
+            f'remember_digest={self.remember_digest.__repr__()}, ' +\
+            f'admin={self.admin.__repr__()})'
 
     def __str__(self):
         return f'User(id={self.id}, name={self.name}, email={self.email}, ' +\
@@ -45,7 +47,8 @@ class User:
             f'password_confirmation={self.password_confirmation}, ' +\
             f'password_digest={self.password_digest}, ' +\
             f'remember_token={self.remember_token}, ' +\
-            f'remember_digest={self.remember_digest})'
+            f'remember_digest={self.remember_digest}, ' +\
+            f'admin={self.admin})'
 
     def __eq__(self, other):
         # created_at, updated_atはdatetime.datetime型と
@@ -56,7 +59,8 @@ class User:
             self.name==other.name and \
             self.email==other.email and \
             self.password_digest==other.password_digest and \
-            self.remember_digest==other.remember_digest
+            self.remember_digest==other.remember_digest and \
+            self.admin==other.admin
 
     def valid(self):
         self.errors = Errors()
@@ -145,12 +149,11 @@ class User:
         user['updated_at'] = t
         user['password_digest'] = self.password_digest
         user['remember_digest'] = self.remember_digest
+        user['admin'] = self.admin
 
         client.put(user)
         self.created_at = user['created_at']
         self.updated_at = user['updated_at']
-        self.password_digest = user['password_digest']
-        self.remember_digest = user['remember_digest']
         return user
 
     def _insert(self):
@@ -219,6 +222,7 @@ class User:
             return self._insert()
 
     def update(self, **kwargs):
+        # remember_token, remember_digestはここでは扱わずrememberメソッドで扱う
         if len(kwargs) == 0:
             # print(f'test update: no update values')
             return True
@@ -243,6 +247,10 @@ class User:
                 if temp.password_confirmation != v:
                     temp.password_confirmation = v
                     dirty = True
+            elif k == 'admin':
+                if temp.admin != v:
+                    temp.admin = v
+                    dirty = True
             else:
                 raise AttributeError(f'{k} key is bad')
 
@@ -262,6 +270,7 @@ class User:
                 self.password = temp.password
                 self.password_confirmation = temp.password_confirmation
                 self.password_digest = temp.password_digest
+                self.admin = temp.admin
                 return True
         return False
 
@@ -289,6 +298,10 @@ class User:
                 if temp.remember_digest != v:
                     temp.remember_digest = v
                     dirty = True
+            elif k == 'admin':
+                if temp.admin != v:
+                    temp.admin = v
+                    dirty = True
             else:
                 raise AttributeError(f'{k} key is bad')
 
@@ -299,6 +312,7 @@ class User:
                 self.updated_at = temp.updated_at
                 self.password_digest = temp.password_digest
                 self.remember_digest = temp.remember_digest
+                self.admin = temp.admin
                 return True
         return False
 
@@ -319,6 +333,7 @@ class User:
         self.password_digest = user.password_digest
         self.remember_token = user.remember_token
         self.remember_digest = user.remember_digest
+        self.admin = user.admin
         self.errors = user.errors
         return self
 

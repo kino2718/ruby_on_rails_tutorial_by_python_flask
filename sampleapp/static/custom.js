@@ -30,13 +30,13 @@
 	links_with_data_method = get_links_with_data_method();
 
 	// data-method属性を持つ link tag にPOST動作をさせる
-	for (var i = 0; i < links_with_data_method.length; i++) {
-		var link = links_with_data_method[i];
-		var method = link.getAttribute('data-method');
+	for (let i = 0; i < links_with_data_method.length; i++) {
+		let link = links_with_data_method[i];
 		link.onclick = function(e) {
+			let method = link.getAttribute('data-method');
 			// form要素を作成
-			var form = document.createElement('form');
-			var form_content = "<input name='_method' value='" + method +
+			let form = document.createElement('form');
+			let form_content = "<input name='_method' value='" + method +
 			"' type='hiden' />";
 			form_content += "<input name='" + csrf_param +
 			"' value='" + csrf_token + "' type='hiden' />";
@@ -47,6 +47,15 @@
 			form.target = link.target;
 			form.innerHTML = form_content;
 			form.style.display = 'none';
+
+			// data-confirm属性がある時は確認のダイアログを出す
+			let message = link.getAttribute('data-confirm')
+			if (message) {
+				form.onsubmit = function(e) {
+					return window.confirm(message)
+				}
+			}
+
 			document.body.appendChild(form);
 			// 送信
 			form.querySelector('[type="submit"]').click();

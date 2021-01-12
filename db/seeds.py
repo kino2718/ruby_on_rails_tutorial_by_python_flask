@@ -11,7 +11,8 @@ print('**** add main user ****')
 res = User.create(name="Example User",
                   email="example@railstutorial.org",
                   password="foobar",
-                  password_confirmation="foobar")
+                  password_confirmation="foobar",
+                  admin=True)
 if not res:
     raise Exception('could not create main user account')
 

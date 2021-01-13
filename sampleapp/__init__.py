@@ -26,6 +26,10 @@ def create_app(test_config=None):
     from .controllers import sessions_controller
     app.register_blueprint(sessions_controller.bp)
 
+    # register account_activations blueprint
+    from .controllers import account_activations_controller
+    app.register_blueprint(account_activations_controller.bp)
+
     @app.after_request
     def add_default_headers(resp):
         resp.headers['X-XSS-Protection'] = '1; mode=block'

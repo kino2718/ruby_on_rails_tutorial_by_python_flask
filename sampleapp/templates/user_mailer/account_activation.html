@@ -1,0 +1,12 @@
+{% extends 'layouts/mailer.html' %}
+{% block content %}
+<h1>Sample App</h1>
+
+<p>Hi {{ user.name }},</p>
+
+<p>
+Welcome to the Sample App! Click on the link below to activate your account:
+</p>
+
+<a href="{{ url_for('account_activations.edit', id=user.activation_token, email=user.email, _external=True) }}">Activate</a>
+{% endblock %}

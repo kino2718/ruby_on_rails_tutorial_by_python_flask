@@ -6,6 +6,9 @@ import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from .errors import Errors
 import secrets
+import functools
+from ..mailers import user_mailer
+from flask_mail import Mail
 
 class User:
     KIND_EMAILS = 'emails'
@@ -25,6 +28,10 @@ class User:
         self.remember_token = kwargs.get('remember_token')
         self.remember_digest = kwargs.get('remember_digest')
         self.admin = kwargs.get('admin', False)
+        self.activation_token = kwargs.get('activation_token')
+        self.activation_digest = kwargs.get('activation_digest')
+        self.activated = kwargs.get('activated', False)
+        self.activated_at = kwargs.get('activated_at')
         self.errors = Errors()
 
     def __repr__(self):
@@ -37,7 +44,12 @@ class User:
             f'password_digest={self.password_digest.__repr__()}, ' +\
             f'remember_token={self.remember_token.__repr__()}, ' +\
             f'remember_digest={self.remember_digest.__repr__()}, ' +\
-            f'admin={self.admin.__repr__()})'
+            f'admin={self.admin.__repr__()}, ' +\
+            f'activation_token={self.activation_token.__repr__()}, ' +\
+            f'activation_digest={self.activation_digest.__repr__()}, ' +\
+            f'activated={self.activated.__repr__()}, ' +\
+            f'activated_at={self.activated_at.__repr__()})'
+
 
     def __str__(self):
         return f'User(id={self.id}, name={self.name}, email={self.email}, ' +\
@@ -48,10 +60,14 @@ class User:
             f'password_digest={self.password_digest}, ' +\
             f'remember_token={self.remember_token}, ' +\
             f'remember_digest={self.remember_digest}, ' +\
-            f'admin={self.admin})'
+            f'admin={self.admin}, ' +\
+            f'activation_token={self.activation_token}, ' +\
+            f'activation_digest={self.activation_digest}, ' +\
+            f'activated={self.activated}, ' +\
+            f'activated_at={self.activated_at})'
 
     def __eq__(self, other):
-        # created_at, updated_atはdatetime.datetime型と
+        # created_at, updated_at, activated_atはdatetime.datetime型と
         # google.api_core.datetime_helpers.DatetimeWithNanoseconds型を
         # 取るので比較には用いない。手抜き
         return \
@@ -60,7 +76,20 @@ class User:
             self.email==other.email and \
             self.password_digest==other.password_digest and \
             self.remember_digest==other.remember_digest and \
-            self.admin==other.admin
+            self.admin==other.admin and \
+            self.activation_token==other.activation_token and \
+            self.activation_digest==other.activation_digest and \
+            self.activated==other.activated
+
+    # decorator
+    # methodではなく単にUser classのスコープ内の関数
+    def create_activation_digest(f):
+        @functools.wraps(f)
+        def wrapper(self, *args, **kwargs):
+            self.activation_token = User.new_token()
+            self.activation_digest = User.digest(self.activation_token)
+            return f(self, *args, **kwargs)
+        return wrapper
 
     def valid(self):
         self.errors = Errors()
@@ -150,12 +179,16 @@ class User:
         user['password_digest'] = self.password_digest
         user['remember_digest'] = self.remember_digest
         user['admin'] = self.admin
+        user['activation_digest'] = self.activation_digest
+        user['activated'] = self.activated
+        user['activated_at'] = self.activated_at
 
         client.put(user)
         self.created_at = user['created_at']
         self.updated_at = user['updated_at']
         return user
 
+    @create_activation_digest
     def _insert(self):
         client = datastore.Client()
         try:
@@ -223,6 +256,8 @@ class User:
 
     def update(self, **kwargs):
         # remember_token, remember_digestはここでは扱わずrememberメソッドで扱う
+        # activation_token, activation_digestは_insertで作成する
+        # activated, activated_atはupdate_attributeで扱う
         if len(kwargs) == 0:
             # print(f'test update: no update values')
             return True
@@ -274,7 +309,7 @@ class User:
                 return True
         return False
 
-    def update_attribute(self, **kwargs):
+    def update_columns(self, **kwargs):
         if len(kwargs) == 0:
             return True
 
@@ -302,6 +337,18 @@ class User:
                 if temp.admin != v:
                     temp.admin = v
                     dirty = True
+            elif k == 'activation_digest':
+                if temp.activation_digest != v:
+                    temp.activation_digest = v
+                    dirty = True
+            elif k == 'activated':
+                if temp.activated != v:
+                    temp.activated = v
+                    dirty = True
+            elif k == 'activated_at':
+                if temp.activated_at != v:
+                    temp.activated_at = v
+                    dirty = True
             else:
                 raise AttributeError(f'{k} key is bad')
 
@@ -313,8 +360,16 @@ class User:
                 self.password_digest = temp.password_digest
                 self.remember_digest = temp.remember_digest
                 self.admin = temp.admin
+                self.activation_digest = temp.activation_digest
+                self.activated = temp.activated
+                self.activated_at = temp.activated_at
                 return True
-        return False
+            else:
+                return False
+        return True
+
+    def update_attribute(self, k, v):
+        return self.update_columns(**{k:v})
 
     @classmethod
     def create(cls, **kwargs):
@@ -334,6 +389,10 @@ class User:
         self.remember_token = user.remember_token
         self.remember_digest = user.remember_digest
         self.admin = user.admin
+        self.activation_token = user.activation_token
+        self.activation_digest = user.activation_digest
+        self.activated = user.activated
+        self.activated_at = user.activated_at
         self.errors = user.errors
         return self
 
@@ -413,10 +472,15 @@ class User:
             return self
         return None
 
-    def authenticated_by_remember_token(self, remember_token):
-        if not self.remember_digest:
+    def authenticated(self, attribute, token):
+        digest = None
+        if attribute == 'remember':
+            digest = self.remember_digest
+        elif attribute == 'activation':
+            digest = self.activation_digest
+        if not digest:
             return False
-        return check_password_hash(self.remember_digest, remember_token)
+        return check_password_hash(digest, token)
 
     @staticmethod
     def digest(string):
@@ -430,10 +494,21 @@ class User:
     def remember(self):
         self.remember_token = User.new_token()
         digest = User.digest(self.remember_token)
-        self.update_attribute(remember_digest=digest)
+        self.update_attribute('remember_digest', digest)
 
     def forget(self):
-        self.update_attribute(remember_digest=None)
+        self.update_attribute('remember_digest', None)
+
+    # アカウントを有効にする
+    def activate(self):
+        self.update_attribute('activated', True)
+        self.update_attribute('activated_at', datetime.utcnow())
+
+    # 有効化用のメールを送信する
+    def send_activation_email(self, app):
+        msg = user_mailer.account_activation(self)
+        mail = Mail(app)
+        mail.send(msg)
 
     def _does_email_exist(self):
         client = datastore.Client()

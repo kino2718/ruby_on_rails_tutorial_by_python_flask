@@ -1,4 +1,5 @@
 Flask==1.1.2
 flask-paginate
+Flask-Mail
 gunicorn
 google-cloud-datastore

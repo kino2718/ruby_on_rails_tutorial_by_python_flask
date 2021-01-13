@@ -3,21 +3,25 @@ michael:
   email: michael@example.com
   password: 'password'
   admin: True
+  activated: True
 
 archer:
   name: Sterling Archer
   email: duchess@example.gov
   password: 'password'
+  activated: True
 
 lana:
   name: Lana Kane
   email: hands@example.gov
   password: 'password'
+  activated: True
 
 malory:
   name: Malory Archer
   email: boss@example.gov
   password: 'password'
+  activated: True
 
 # users_index_test.pyのテストでユーザーが30人以上必要だが
 # 開発用のdbとテスト用のdbを分けていないので

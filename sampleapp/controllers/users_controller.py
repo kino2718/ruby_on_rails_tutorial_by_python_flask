@@ -1,8 +1,8 @@
 from flask import (Blueprint, render_template, session, request, abort,
-                   redirect, url_for, flash)
+                   redirect, url_for, flash, current_app)
 from ..models.user import User
 from ..helpers.application_helper import csrf_token, check_csrf_token
-from ..helpers.sessions_helper import (log_in, logged_in, is_current_user,
+from ..helpers.sessions_helper import (logged_in, is_current_user,
                                        store_location, current_user)
 import secrets
 import functools
@@ -28,8 +28,8 @@ def correct_user(f):
     def wrapper(id, *args, **kwargs):
         user = User.find(id)
         if not is_current_user(user):
-            user_url = url_for('static_pages.home', _external=True)
-            return redirect(user_url)
+            url = url_for('static_pages.home', _external=True)
+            return redirect(url)
         return f(id, *args, **kwargs)
     return wrapper
 
@@ -90,10 +90,18 @@ def create():
                 password_confirmation=password_confirmation)
 
     if user.save():
-        log_in(user)
-        user_url = url_for('.show',id=user.id, _external=True)
-        flash('Welcome to the Sample App!', 'success')
-        return redirect(user_url)
+        try:
+            user.send_activation_email(current_app)
+        except ConnectionRefusedError as e:
+            user.destroy()
+            abort(500, description='Unable to send the confirmation email')
+        except BaseException as e:
+            user.destroy()
+            raise e
+
+        flash('Please check your email to activate your account.', 'info')
+        root_url = url_for('static_pages.home', _external=True)
+        return redirect(root_url)
     else:
         return render_template('users/new.html', user=user, csrf_token=csrf_token)
 

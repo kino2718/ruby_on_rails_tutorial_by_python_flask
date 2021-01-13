@@ -26,14 +26,21 @@ def create():
     password = request.form['password']
     users = User.find_by('email', email)
     if users and (user := users[0]) and user.authenticate(password):
-        # login成功
-        log_in(user)
-        user_url = url_for('users.show', id=user.id, _external=True)
-        response = redirect_back_or(user_url)
-        remember_me = request.form.get('remember_me')
-        remember(user, response) if remember_me == '1' else forget(user, response)
-        return response
-
+        if user.activated:
+            # login成功
+            log_in(user)
+            url = url_for('users.show', id=user.id, _external=True)
+            response = redirect_back_or(url)
+            remember_me = request.form.get('remember_me')
+            remember(user, response) if remember_me == '1' \
+                else forget(user, response)
+            return response
+        else:
+            message = 'Account not activated. ' +\
+                      'Check your email for the activation link.'
+            flash(message, 'warning')
+            url = url_for('static_pages.home', _external=True)
+            return redirect(url)
     # login失敗
     flash('Invalid email/password combination', 'danger')
     return render_template('sessions/new.html', csrf_token=csrf_token)

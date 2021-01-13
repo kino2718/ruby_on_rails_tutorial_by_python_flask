@@ -57,7 +57,7 @@ def current_user():
                 # 記憶トークンの確認
                 if user and \
                    (remember_token := request.cookies.get('remember_token')) and \
-                   (user.authenticated_by_remember_token(remember_token)):
+                   (user.authenticated('remember', remember_token)):
                     log_in(user)
                     g.current_user = user
                     return user

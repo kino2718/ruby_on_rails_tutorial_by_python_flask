@@ -1,5 +1,6 @@
 from sampleapp.models.user import User
 from faker import Faker
+from datetime import datetime
 
 # 最初に全てのユーザーを削除する
 print('**** delete all users ****')
@@ -12,7 +13,9 @@ res = User.create(name="Example User",
                   email="example@railstutorial.org",
                   password="foobar",
                   password_confirmation="foobar",
-                  admin=True)
+                  admin=True,
+                  activated=True,
+                  activated_at=datetime.utcnow())
 if not res:
     raise Exception('could not create main user account')
 
@@ -27,6 +30,8 @@ for n in range(99):
     res = User.create(name=name,
                       email=email,
                       password=password,
-                      password_confirmation=password)
+                      password_confirmation=password,
+                      activated=True,
+                      activated_at=datetime.utcnow())
     if not res:
         raise Exception(f'could not create "name" account')

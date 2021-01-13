@@ -61,4 +61,4 @@ def test_password_should_have_a_minimum_length(user):
     assert not user.valid()
 
 def test_authenticated_should_return_false_for_a_user_with_nil_digest(user):
-    assert not user.authenticated_by_remember_token('')
+    assert not user.authenticated('remember', '')

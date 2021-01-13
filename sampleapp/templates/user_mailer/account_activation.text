@@ -1,0 +1,8 @@
+{% extends 'layouts/mailer.text' %}
+{% block content %}
+Hi {{ user.name }},
+
+Welcome to the Sample App! Click on the link below to activate your account:
+
+{{ url_for('account_activations.edit', id=user.activation_token, email=user.email, _external=True) }}
+{% endblock %}

@@ -28,5 +28,5 @@ def test_current_user_returns_nil_when_remember_digest_is_wrong(app, test_users)
     test_user = test_users['michael']
     with app.test_request_context('/'):
         remember(test_user)
-        test_user.update_attribute(remember_digest=User.digest(User.new_token()))
+        test_user.update_attribute('remember_digest', User.digest(User.new_token()))
         assert not current_user()

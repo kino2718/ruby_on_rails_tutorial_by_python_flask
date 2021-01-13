@@ -2,6 +2,7 @@ import pytest
 from sampleapp import create_app
 from sampleapp.models.user import User
 import yaml
+from datetime import datetime
 
 @pytest.fixture
 def app():
@@ -28,8 +29,13 @@ def test_users():
             email=v['email']
             password = v['password']
             admin = v.get('admin', False)
+            activated = v.get('activated', False)
+            activated_at=None
+            if activated:
+                activated_at = datetime.utcnow()
             user = User(name=name, email=email, password=password,
-                        password_confirmation=password, admin=admin)
+                        password_confirmation=password, admin=admin,
+                        activated=activated, activated_at=activated_at)
             if user.save():
                 user.reload()
                 test_users[k] = user

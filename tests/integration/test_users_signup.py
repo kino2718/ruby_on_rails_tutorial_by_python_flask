@@ -1,7 +1,8 @@
-from flask import render_template
+from flask import render_template, url_for
 import re
 from sampleapp.models.user import User
-from common import is_logged_in, are_same_templates, AUTHENTICITY_TOKEN_PATTERN
+from common import (is_logged_in, are_same_templates, AUTHENTICITY_TOKEN_PATTERN,
+                    log_in_as)
 
 def test_invalid_signup_information(client):
     with client:
@@ -31,7 +32,8 @@ def test_invalid_signup_information(client):
         contents = response.data.decode(encoding='utf-8')
         assert are_same_templates(ref, contents)
 
-def test_valid_signup_information(client):
+from flask_mail import Mail
+def test_valid_signup_information_with_account_activation(app, client):
     valid_email = 'user2@example.com'
     with client:
         try:
@@ -44,19 +46,52 @@ def test_valid_signup_information(client):
             before_count = User.count()
             user = User(name='Example User', email=valid_email,
                         password='password', password_confirmation='password')
-            response = client.post(
-                '/users', data={'name': user.name,
-                                'email': user.email,
-                                'password': user.password,
-                                'password_confirmation': user.password_confirmation,
-                                'authenticity_token': token},
-                follow_redirects=True)
-            after_count = User.count()
-            assert before_count+1 == after_count
 
-            user.valid()
-            ref = render_template('users/show.html',user=user)
+            mail = Mail(app)
+            with mail.record_messages() as outbox:
+                response = client.post(
+                    '/users', data={
+                        'name': user.name,
+                        'email': user.email,
+                        'password': user.password,
+                        'password_confirmation': user.password_confirmation,
+                        'authenticity_token': token},
+                    follow_redirects=True)
+                assert len(outbox) == 1
+
+            # activation状態をデータベースから読み出す
+            user = User.find_by('email', user.email)[0]
+            assert not user.activated
+
+            # activation digestが作られていることを確認する
+            assert user.activation_digest
+
+            # テストからactivation tokenを使用するためにtoken, digestを再設定する
+            user.activation_token = User.new_token()
+            digest = User.digest(user.activation_token)
+            user.update_attribute('activation_digest', digest)
+
+            # 有効化していない状態でログインしてみる
+            log_in_as(client, user.email)
+            assert not is_logged_in()
+            # 有効化トークンが不正な場合
+            url = url_for('account_activations.edit', id='invalid token',
+                          email=user.email, _external=True)
+            client.get(url, follow_redirects=True)
+            assert not is_logged_in()
+            # トークンは正しいがメールアドレスが無効な場合
+            url = url_for('account_activations.edit', id=user.activation_token,
+                          email='wrong', _external=True)
+            client.get(url, follow_redirects=True)
+            assert not is_logged_in()
+            # 有効化トークンが正しい場合
+            url = url_for('account_activations.edit', id=user.activation_token,
+                          email=user.email, _external=True)
+            response = client.get(url, follow_redirects=True)
             contents = response.data.decode(encoding='utf-8')
+            user.reload()
+            assert user.activated
+            ref = render_template('users/show.html',user=user)
             assert are_same_templates(ref, contents)
             assert is_logged_in()
         finally:

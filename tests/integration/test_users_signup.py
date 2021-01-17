@@ -3,6 +3,7 @@ import re
 from sampleapp.models.user import User
 from common import (is_logged_in, are_same_templates, AUTHENTICITY_TOKEN_PATTERN,
                     log_in_as)
+from flask_mail import Mail
 
 def test_invalid_signup_information(client):
     with client:
@@ -32,7 +33,6 @@ def test_invalid_signup_information(client):
         contents = response.data.decode(encoding='utf-8')
         assert are_same_templates(ref, contents)
 
-from flask_mail import Mail
 def test_valid_signup_information_with_account_activation(app, client):
     valid_email = 'user2@example.com'
     with client:

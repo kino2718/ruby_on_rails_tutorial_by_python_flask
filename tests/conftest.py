@@ -2,7 +2,7 @@ import pytest
 from sampleapp import create_app
 from sampleapp.models.user import User
 import yaml
-from datetime import datetime
+from datetime import datetime, timezone
 
 @pytest.fixture
 def app():
@@ -32,7 +32,7 @@ def test_users():
             activated = v.get('activated', False)
             activated_at=None
             if activated:
-                activated_at = datetime.utcnow()
+                activated_at = datetime.now(timezone.utc)
             user = User(name=name, email=email, password=password,
                         password_confirmation=password, admin=admin,
                         activated=activated, activated_at=activated_at)

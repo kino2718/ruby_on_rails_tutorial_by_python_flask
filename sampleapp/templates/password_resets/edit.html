@@ -1,0 +1,25 @@
+{% extends 'layouts/application.html' %}
+{% set title = 'Reset password' %}
+{% block content %}
+<h1>Reset password</h1>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+	<form action="{{ url_for('password_resets.update', id=reset_token) }}" accept-charset="UTF-8" method="post">
+	  {% include 'shared/error_messages.html' %}
+
+	  <input type="hidden" name="email" value="{{ user.email }}" />
+
+	  <input type="hidden" name="_method" value="patch" />
+	  <input type="hidden" name="authenticity_token" value="{{ csrf_token }}" />
+
+	  {{ make_form_label(user, 'password', 'Password')|safe }}
+	  {{ make_form_input(user, 'password', 'password', 'user_password')|safe }}
+
+	  {{ make_form_label(user, 'password_confirmation', 'Confirmation')|safe }}
+	  {{ make_form_input(user, 'password', 'password_confirmation', 'user_password_confirmation')|safe }}
+
+	  <input type="submit" name="commit" value="Update password" class="btn btn-primary" />
+  </div>
+</div>
+{% endblock %}

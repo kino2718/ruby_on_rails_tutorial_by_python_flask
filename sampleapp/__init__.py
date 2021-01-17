@@ -30,6 +30,10 @@ def create_app(test_config=None):
     from .controllers import account_activations_controller
     app.register_blueprint(account_activations_controller.bp)
 
+    # register password_resets blueprint
+    from .controllers import password_resets_controller
+    app.register_blueprint(password_resets_controller.bp)
+
     @app.after_request
     def add_default_headers(resp):
         resp.headers['X-XSS-Protection'] = '1; mode=block'

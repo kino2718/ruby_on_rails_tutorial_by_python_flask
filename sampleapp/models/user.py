@@ -1,6 +1,6 @@
 from google.cloud import datastore
 from google.api_core.exceptions import Aborted
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import copy
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -32,6 +32,9 @@ class User:
         self.activation_digest = kwargs.get('activation_digest')
         self.activated = kwargs.get('activated', False)
         self.activated_at = kwargs.get('activated_at')
+        self.reset_token = kwargs.get('reset_token')
+        self.reset_digest = kwargs.get('reset_digest')
+        self.reset_sent_at = kwargs.get('reset_sent_at')
         self.errors = Errors()
 
     def __repr__(self):
@@ -48,8 +51,10 @@ class User:
             f'activation_token={self.activation_token.__repr__()}, ' +\
             f'activation_digest={self.activation_digest.__repr__()}, ' +\
             f'activated={self.activated.__repr__()}, ' +\
-            f'activated_at={self.activated_at.__repr__()})'
-
+            f'activated_at={self.activated_at.__repr__()}, ' +\
+            f'reset_token={self.reset_token.__repr__()} ,' +\
+            f'reset_digest={self.reset_digest.__repr__()}, ' +\
+            f'reset_sent_at={self.reset_sent_at.__repr__()})'
 
     def __str__(self):
         return f'User(id={self.id}, name={self.name}, email={self.email}, ' +\
@@ -64,7 +69,10 @@ class User:
             f'activation_token={self.activation_token}, ' +\
             f'activation_digest={self.activation_digest}, ' +\
             f'activated={self.activated}, ' +\
-            f'activated_at={self.activated_at})'
+            f'activated_at={self.activated_at}, ' +\
+            f'reset_token={self.reset_token}, ' +\
+            f'reset_digest={self.reset_digest}, ' +\
+            f'reset_sent_at={self.reset_sent_at})'
 
     def __eq__(self, other):
         # created_at, updated_at, activated_atはdatetime.datetime型と
@@ -79,7 +87,10 @@ class User:
             self.admin==other.admin and \
             self.activation_token==other.activation_token and \
             self.activation_digest==other.activation_digest and \
-            self.activated==other.activated
+            self.activated==other.activated and \
+            self.reset_token==other.reset_token and \
+            self.reset_digest==other.reset_digest and \
+            self.reset_sent_at==other.reset_sent_at
 
     # decorator
     # methodではなく単にUser classのスコープ内の関数
@@ -163,13 +174,13 @@ class User:
 
         # emailアドレスを登録
         entity = datastore.Entity(key=key)
-        entity['created_at'] = datetime.utcnow()
+        entity['created_at'] = datetime.now(timezone.utc)
         # print(f'{self.name}: メール登録開始')
         client.put(entity)
         return True
 
     def _insert_or_update_user(self, client, user):
-        t = datetime.utcnow()
+        t = datetime.now(timezone.utc)
         user['name'] =  self.name
         user['email'] = self.email
         if not self.id:
@@ -182,6 +193,8 @@ class User:
         user['activation_digest'] = self.activation_digest
         user['activated'] = self.activated
         user['activated_at'] = self.activated_at
+        user['reset_digest'] = self.reset_digest
+        user['reset_sent_at'] = self.reset_sent_at
 
         client.put(user)
         self.created_at = user['created_at']
@@ -258,6 +271,7 @@ class User:
         # remember_token, remember_digestはここでは扱わずrememberメソッドで扱う
         # activation_token, activation_digestは_insertで作成する
         # activated, activated_atはupdate_attributeで扱う
+        # reset_digest, reset_sent_atはupdate_attributeで扱う
         if len(kwargs) == 0:
             # print(f'test update: no update values')
             return True
@@ -296,7 +310,7 @@ class User:
 
         if dirty:
             # password_digest を作成。passwordがFalseの時は以前のままにする
-            if self.password:
+            if temp.password:
                 temp.password_digest = User.digest(temp.password)
             if temp._update():
                 self.name = temp.name
@@ -349,6 +363,14 @@ class User:
                 if temp.activated_at != v:
                     temp.activated_at = v
                     dirty = True
+            elif k == 'reset_digest':
+                if temp.reset_digest != v:
+                    temp.reset_digest = v
+                    dirty = True
+            elif k == 'reset_sent_at':
+                if temp.reset_sent_at != v:
+                    temp.reset_sent_at = v
+                    dirty = True
             else:
                 raise AttributeError(f'{k} key is bad')
 
@@ -363,6 +385,8 @@ class User:
                 self.activation_digest = temp.activation_digest
                 self.activated = temp.activated
                 self.activated_at = temp.activated_at
+                self.reset_digest = temp.reset_digest
+                self.reset_sent_at = temp.reset_sent_at
                 return True
             else:
                 return False
@@ -393,6 +417,9 @@ class User:
         self.activation_digest = user.activation_digest
         self.activated = user.activated
         self.activated_at = user.activated_at
+        self.reset_token = user.reset_token
+        self.reset_digest = user.reset_digest
+        self.reset_sent_at = user.reset_sent_at
         self.errors = user.errors
         return self
 
@@ -478,6 +505,8 @@ class User:
             digest = self.remember_digest
         elif attribute == 'activation':
             digest = self.activation_digest
+        elif attribute == 'reset':
+            digest = self.reset_digest
         if not digest:
             return False
         return check_password_hash(digest, token)
@@ -502,13 +531,30 @@ class User:
     # アカウントを有効にする
     def activate(self):
         self.update_attribute('activated', True)
-        self.update_attribute('activated_at', datetime.utcnow())
+        self.update_attribute('activated_at', datetime.now(timezone.utc))
 
     # 有効化用のメールを送信する
     def send_activation_email(self, app):
         msg = user_mailer.account_activation(self)
         mail = Mail(app)
         mail.send(msg)
+
+    # パスワード再設定の属性を設定する
+    def create_reset_digest(self):
+        self.reset_token = User.new_token()
+        self.update_attribute('reset_digest',  User.digest(self.reset_token))
+        self.update_attribute('reset_sent_at', datetime.now(timezone.utc))
+
+    # パスワード再設定のメールを送信する
+    def send_password_reset_email(self, app):
+        msg = user_mailer.password_reset(self)
+        mail = Mail(app)
+        mail.send(msg)
+
+    def password_reset_expired(self):
+        dt = datetime.now(timezone.utc) - self.reset_sent_at
+        return 2*60*60 < dt.total_seconds()
+
 
     def _does_email_exist(self):
         client = datastore.Client()

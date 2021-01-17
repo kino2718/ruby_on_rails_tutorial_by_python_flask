@@ -1,0 +1,18 @@
+{% extends 'layouts/application.html' %}
+{% set title = 'Forgot password' %}
+{% block content %}
+<h1>Forgot password</h1>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+	<form action="{{ url_for('password_resets.create') }}" accept-charset="UTF-8" method="post">
+	  <input type="hidden" name="authenticity_token" value="{{ csrf_token }}" />
+
+	  <label for="password_resets_email">Email</label>
+	  <input type="email" name="email" id="password_resets_email" class="form-control" />
+
+	  <!-- ボタンの2度押し対策は今の所しない -->
+	  <input type="submit" name="commit" value="Submit" class="btn btn-primary" />
+	</form>
+  </div>
+</div>
+{% endblock %}

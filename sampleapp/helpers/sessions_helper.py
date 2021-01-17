@@ -1,6 +1,6 @@
 from flask import g, session, current_app, request, redirect
 from ..models.user import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itsdangerous import URLSafeSerializer
 
 def log_in(user):
@@ -27,7 +27,7 @@ def remember(user, response):
 
     # 署名付きuser idとremember_tokenのクッキーを設定
     # 期間無制限（実際にはおおよそ20年後に期限切れ）
-    expires = datetime.utcnow() + timedelta(days=365*20)
+    expires = datetime.now(timezone.utc) + timedelta(days=365*20)
     response.set_cookie(key='user_id', value=signed_id,
                         expires=expires)
     response.set_cookie(key='remember_token', value=user.remember_token,

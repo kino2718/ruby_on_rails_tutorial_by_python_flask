@@ -18,7 +18,7 @@ def create():
         abort(422)
 
     email = request.form['email']
-    users = User.find_by('email', email)
+    users = User.find_by(email=email)
     if users and (user:=users[0]):
         user.create_reset_digest()
         user.send_password_reset_email(current_app)
@@ -32,7 +32,7 @@ def create():
 @bp.route('/<id>/edit')
 def edit(id):
     email = request.args.get('email')
-    users = User.find_by('email', email)
+    users = User.find_by(email=email)
     if not (users and (user:=users[0]) and user.activated and \
             user.authenticated('reset', id)):
         url = url_for('static_pages.home', _external=True)
@@ -60,7 +60,7 @@ def update(id):
         return redirect(url)
 
     email = request.form.get('email')
-    users = User.find_by('email', email)
+    users = User.find_by(email=email)
     if not (users and (user:=users[0]) and user.activated and \
             user.authenticated('reset', id)):
         url = url_for('static_pages.home', _external=True)

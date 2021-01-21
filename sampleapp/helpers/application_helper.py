@@ -41,3 +41,14 @@ def csrf_token_meta_tag():
 
 def template_functions():
     return dict(full_title=full_title, csrf_token_meta_tag=csrf_token_meta_tag)
+
+# decorator
+# Inner classを修飾するとOuter classの属性にself.outer.attrの形でアクセスできる
+class InnerClass:
+  def __init__(self, cls):
+    self.cls = cls
+  def __get__(self, outer_instance, outer_class):
+    class Wrapper(self.cls):
+      outer = outer_instance
+    Wrapper.__name__ = self.cls.__name__
+    return Wrapper

@@ -1,15 +1,15 @@
-{% if user.errors.has_errors() %}
+{% if object.errors.has_errors() %}
 <div id="error_explanation">
   <div class="alert alert-danger">
-    The form contains {{ user.errors.count }}
-	{% if user.errors.count == 1 %}
+    The form contains {{ object.errors.count }}
+	{% if object.errors.count == 1 %}
 	error.
 	{% else %}
     errors.
 	{% endif %}
   </div>
   <ul>
-    {% for msg in user.errors.full_messages() %}
+    {% for msg in object.errors.full_messages() %}
     <li>{{ msg }}</li>
     {% endfor %}
   </ul>

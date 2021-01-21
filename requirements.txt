@@ -3,3 +3,4 @@ flask-paginate
 Flask-Mail
 gunicorn
 google-cloud-datastore
+google-cloud-storage

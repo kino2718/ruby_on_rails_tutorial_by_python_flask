@@ -19,12 +19,12 @@ def template_functions():
         s = f'<label for="user_{name}">{contents}</label>'
         return prefix + s + suffix
 
-    def make_form_input(user, el_type, name, el_id):
+    def make_form_input(obj, el_type, name, el_id):
         prefix = suffix = ''
-        if user.errors.has_errors_with(name):
+        if obj.errors.has_errors_with(name):
             prefix = '<div class="has-error field_with_errors">'
             suffix = '</div>'
-        value = getattr(user, name, None)
+        value = getattr(obj, name, None)
 
         el_type = html.escape(el_type, quote=True)
         name = html.escape(name, quote=True)
@@ -38,6 +38,24 @@ def template_functions():
             s = s1 + s2
         return prefix + s + suffix
 
+    def make_form_textarea(obj, name, placeholder, el_id):
+        prefix = suffix = ''
+        if obj.errors.has_errors_with(name):
+            prefix = '<div class="has-error field_with_errors">'
+            suffix = '</div>'
+        value = getattr(obj, name, None)
+
+        name = html.escape(name, quote=True)
+        s1 = f'<textarea placeholder="{placeholder}" name="{name}" id="{el_id}">'
+        s2 = '</textarea>'
+        if value is not None:
+            value = html.escape(value, quote=True)
+            s = s1 + value + s2
+        else:
+            s = s1 + s2
+        return prefix + s + suffix
+
     return dict(gravatar_for=gravatar_for,
                 make_form_label=make_form_label,
-                make_form_input=make_form_input)
+                make_form_input=make_form_input,
+                make_form_textarea=make_form_textarea)

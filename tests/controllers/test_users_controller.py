@@ -85,7 +85,8 @@ def test_should_redirect_edit_when_logged_in_as_wrong_user(client, test_users):
         assert not flashed_message
 
         # homeにredirectされていることを確認
-        ref = render_template('static_pages/home.html')
+        ref = render_template('static_pages/home.html',
+                              micropost=other_user.microposts.build())
         contents = response.data.decode(encoding='utf-8')
         assert are_same_templates(ref, contents)
 
@@ -118,7 +119,8 @@ def test_should_redirect_update_when_logged_in_as_wrong_user(client, test_users)
         assert not flashed_message
 
         # homeにredirectされていることを確認
-        ref = render_template('static_pages/home.html')
+        ref = render_template('static_pages/home.html',
+                              micropost=other_user.microposts.build())
         assert are_same_templates(ref, contents)
 
 def test_should_redirect_destroy_when_not_logged_in(client, test_users):
@@ -177,5 +179,6 @@ def test_should_redirect_destroy_when_logged_in_as_a_non_admin(client, test_user
         assert before_count == after_count
 
         # homeにredirectされていることを確認
-        ref = render_template('static_pages/home.html')
+        ref = render_template('static_pages/home.html',
+                              micropost=other_user.microposts.build())
         assert are_same_templates(ref, contents)

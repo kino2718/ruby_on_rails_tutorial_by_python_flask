@@ -1,0 +1,47 @@
+orange:
+  content: "I just ate an orange!"
+  #created_at: <%= 10.minutes.ago %>
+  registration_order: 5
+  user: michael
+
+tau_manifesto:
+  content: "Check out the @tauday site by @mhartl: https://tauday.com"
+  #created_at: <%= 3.years.ago %>
+  registration_order: 0
+  user: michael
+
+cat_video:
+  content: "Sad cats are sad: https://youtu.be/PKffm2uI4dk"
+  #created_at: <%= 2.hours.ago %>
+  registration_order: 4
+  user: michael
+
+most_recent:
+  content: "Writing a short test"
+  #created_at: <%= Time.zone.now %>
+  registration_order: 7
+  user: michael
+
+ants:
+  content: "Oh, is that what you want? Because that's how you get ants!"
+  #created_at: <%= 2.years.ago %>
+  registration_order: 1
+  user: archer
+
+zone:
+  content: "Danger zone!"
+  #created_at: <%= 3.days.ago %>
+  registration_order: 2
+  user: archer
+
+tone:
+  content: "I'm sorry. Your words made sense, but your sarcastic tone did not."
+  #created_at: <%= 10.minutes.ago %>
+  registration_order: 6
+  user: lana
+
+van:
+  content: "Dude, this van's, like, rolling probable cause."
+  #created_at: <%= 4.hours.ago %>
+  registration_order: 3
+  user: lana

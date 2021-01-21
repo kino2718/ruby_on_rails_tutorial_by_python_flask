@@ -69,7 +69,16 @@ def show(id):
     user = User.find(id)
     if user is None:
         abort(404)
-    return render_template('users/show.html', user=user)
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 30
+    microposts = user.microposts()
+    total = len(microposts)
+    microposts = microposts[(page-1)*per_page:page*per_page]
+    pagination = Pagination(page=page, total=total, per_page=per_page,
+                            prev_label='&larr; Previous', next_label='Next &rarr;',
+                            css_framework='bootstrap3')
+    return render_template('users/show.html', user=user, microposts=microposts,
+                           pagination=pagination)
 
 @bp.route('/new')
 def new():

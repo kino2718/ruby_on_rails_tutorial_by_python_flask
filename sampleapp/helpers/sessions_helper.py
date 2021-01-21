@@ -92,4 +92,5 @@ def store_location():
         session['forwarding_url'] = request.url
 
 def template_functions():
-    return dict(current_user=current_user, logged_in=logged_in)
+    return dict(current_user=current_user, logged_in=logged_in,
+                is_current_user=is_current_user)

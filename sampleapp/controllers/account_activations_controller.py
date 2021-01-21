@@ -8,7 +8,7 @@ bp = Blueprint('account_activations', __name__, url_prefix='/')
 @bp.route('/<id>/edit')
 def edit(id):
     email = request.args.get('email')
-    users = User.find_by('email', email)
+    users = User.find_by(email=email)
     if users and (user:=users[0]) and not user.activated and \
        user.authenticated('activation', id):
         user.activate()

@@ -1,0 +1,21 @@
+<li id="micropost-{{ micropost.id }}">
+  {% set muser = micropost.user() %}
+  <a href="{{ url_for('users.show', id=muser.id) }}">
+	{{ gravatar_for(muser, size=50)|safe }}
+  </a>
+  <span class="user">
+	<a href="{{ url_for('users.show', id=muser.id) }}">{{ muser.name }}</a>
+  </span>
+  <span class="content">
+	{{ micropost.content }}
+	{% if micropost.image_attached() %}
+	<img src="{{ micropost.image_url() }}" />
+	{% endif %}
+  </span>
+  <span class="timestamp">
+    Posted {{ time_ago_in_words(micropost.created_at) }} ago.
+    {% if is_current_user(micropost.user()) %}
+    <a data-confirm="You sure?" rel="nofollow" data-method="delete" href="/microposts/{{ micropost.id }}">delete</a>
+	{% endif %}
+  </span>
+</li>

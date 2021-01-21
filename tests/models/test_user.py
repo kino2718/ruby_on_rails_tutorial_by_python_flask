@@ -1,6 +1,7 @@
 import pytest
-from sampleapp.models.user import User
 import copy
+from sampleapp.models.user import User
+from sampleapp.models.micropost import Micropost
 
 @pytest.fixture
 def user():
@@ -62,3 +63,16 @@ def test_password_should_have_a_minimum_length(user):
 
 def test_authenticated_should_return_false_for_a_user_with_nil_digest(user):
     assert not user.authenticated('remember', '')
+
+def test_associated_microposts_should_be_destroyed(user):
+    try:
+        user.save()
+        m = user.microposts.create(content="Lorem ipsum")
+        before_count = Micropost.count()
+    finally:
+        user.destroy()
+        after_count = Micropost.count()
+        m = Micropost.find(m.id)
+        if m:
+            m.destroy()
+        assert before_count - 1 == after_count

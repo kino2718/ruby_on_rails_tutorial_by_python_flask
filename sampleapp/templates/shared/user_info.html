@@ -1,0 +1,13 @@
+<a href="/users/{{ current_user().id }}">
+  {{ gravatar_for(current_user(), size=50)|safe }}
+</a>
+<h1>{{ current_user().name }}</h1>
+<span><a href="/users/{{ current_user().id }}">view my profile</a></span>
+<span>
+  {% set nposts = current_user().microposts.count() %}
+  {% if nposts == 1 %}
+  1 micropost
+  {% else %}
+  {{ nposts }} microposts
+  {% endif %}
+</span>

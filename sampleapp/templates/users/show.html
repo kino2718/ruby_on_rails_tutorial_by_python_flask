@@ -11,5 +11,17 @@
 	  </h1>
     </section>
   </aside>
+  <div class="col-md-8">
+    {% if microposts %}
+    <h3>Microposts ({{ user.microposts.count() }})</h3>
+    <ol class="microposts">
+	  {% for micropost in microposts %}
+      {% include 'microposts/micropost.html' %}
+	  {% endfor %}
+    </ol>
+
+	{{ pagination.links }}
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

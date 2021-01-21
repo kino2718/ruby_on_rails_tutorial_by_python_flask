@@ -24,7 +24,7 @@ def create():
 
     email = request.form['email'].lower()
     password = request.form['password']
-    users = User.find_by('email', email)
+    users = User.find_by(email=email)
     if users and (user := users[0]) and user.authenticate(password):
         if user.activated:
             # login成功

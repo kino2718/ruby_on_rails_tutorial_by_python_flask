@@ -9,6 +9,8 @@ import secrets
 import functools
 from ..mailers import user_mailer
 from flask_mail import Mail
+from . import micropost as mpost
+from ..helpers.application_helper import InnerClass
 
 class User:
     KIND_EMAILS = 'emails'
@@ -75,6 +77,8 @@ class User:
             f'reset_sent_at={self.reset_sent_at})'
 
     def __eq__(self, other):
+        if not isinstance(other, User):
+            return False
         # created_at, updated_at, activated_atはdatetime.datetime型と
         # google.api_core.datetime_helpers.DatetimeWithNanoseconds型を
         # 取るので比較には用いない。手抜き
@@ -211,6 +215,8 @@ class User:
                 user = datastore.Entity(user_key)
                 if self._check_email_unique_and_insert(client, email_key):
                     user = self._insert_or_update_user(client, user)
+                else:
+                    return False
         except Aborted as e:
             # transaction競合のため失敗
             # print(f'{self.name}: 例外発生: {type(e)} {e}')
@@ -218,8 +224,7 @@ class User:
             return False
 
         # transactionの外で行うこと
-        if user:
-            self.id = user.key.id
+        self.id = user.key.id
 
         # print(f'{self.name}: ユーザー登録終了')
         return True
@@ -239,6 +244,8 @@ class User:
                     email_key = client.key(User.KIND_EMAILS, self.email)
                     if self._check_email_unique_and_insert(client, email_key):
                         self._insert_or_update_user(client, user)
+                    else:
+                        return False
             except Aborted as e:
                 # transaction競合のため失敗
                 # print(f'{self.name}: 例外発生: {type(e)} {e}')
@@ -321,7 +328,9 @@ class User:
                 self.password_digest = temp.password_digest
                 self.admin = temp.admin
                 return True
-        return False
+            else:
+                return False
+        return True
 
     def update_columns(self, **kwargs):
         if len(kwargs) == 0:
@@ -430,6 +439,11 @@ class User:
         with client.transaction():
             client.delete(email_key)
             client.delete(user_key)
+        # 1つのtransactionにたくさんの処理を入れられないようなので、transactionから外す
+        for m in self.microposts():
+            micropost_key = client.key(
+                mpost.Micropost.KIND_MICROPOSTS, m.id)
+            client.delete(micropost_key)
         return self
 
     @staticmethod
@@ -445,14 +459,15 @@ class User:
         return user
 
     @staticmethod
-    def find_by(type, value):
-        if value is None:
+    def find_by(**kwargs):
+        if not kwargs:
             return []
-        if type == 'email':
-            value = value.lower()
         client = datastore.Client()
         query = client.query(kind=User.KIND_USERS)
-        query.add_filter(type, '=', value)
+        for k,v in kwargs.items():
+            if k == 'email':
+                v = v.lower()
+            query.add_filter(k, '=', v)
         entities = list(query.fetch())
         users = [User(id=entity.key.id, **entity) for entity in entities]
         return users
@@ -555,10 +570,41 @@ class User:
         dt = datetime.now(timezone.utc) - self.reset_sent_at
         return 2*60*60 < dt.total_seconds()
 
+    def feed(self):
+        microposts = mpost.Micropost.find_by(user_id=self.id)
+        return microposts
 
     def _does_email_exist(self):
         client = datastore.Client()
-        users = self.find_by('email', self.email)
+        users = self.find_by(email=self.email)
         if len(users) == 0 or users[0].id == self.id:
             return False
         return True
+
+    # @InnerClassを付けることでmicropostsクラスからUserクラスのインスタンスに
+    # self.outer又はcls.outerでアクセスできるようになる
+    @InnerClass
+    class microposts(list):
+        def __init__(self):
+            ms = mpost.Micropost.find_by(user_id=self.outer.id)
+            super().__init__(ms)
+
+        @classmethod
+        def build(cls, *args, **kwargs):
+            m = mpost.Micropost(*args, user_id=cls.outer.id, **kwargs)
+            return m
+
+        @classmethod
+        def create(cls, *args, **kwargs):
+            m = mpost.Micropost.create(*args, user_id=cls.outer.id, **kwargs)
+            return m
+
+        @classmethod
+        def find_by(cls, **kwargs):
+            kwargs.update({'user_id':cls.outer.id})
+            ms = mpost.Micropost.find_by(**kwargs)
+            return ms
+
+        @classmethod
+        def count(cls):
+            return len(mpost.Micropost.find_by(user_id=cls.outer.id))

@@ -62,4 +62,17 @@
 			return false; // link の GET 動作を disable にする
 		};
 	}
+
+	// idがmicropost_imageの要素を見つけ出し、その要素で指定されるファイルサイズが
+	// 5MB以上ならファイル添付を取り消す
+	let element = document.getElementById('micropost_image');
+	if (element) {
+		element.onchange = function(e) {
+			let size_in_megabytes = this.files[0].size/1024/1024;
+			if (size_in_megabytes > 5) {
+				alert("Maximum file size is 5MB. Please choose a smaller file.");
+				this.value = '';
+			}
+		}
+	}
 })();

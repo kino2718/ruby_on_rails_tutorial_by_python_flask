@@ -60,7 +60,7 @@ def test_valid_signup_information_with_account_activation(app, client):
                 assert len(outbox) == 1
 
             # activation状態をデータベースから読み出す
-            user = User.find_by('email', user.email)[0]
+            user = User.find_by(email=user.email)[0]
             assert not user.activated
 
             # activation digestが作られていることを確認する
@@ -96,6 +96,6 @@ def test_valid_signup_information_with_account_activation(app, client):
             assert is_logged_in()
         finally:
             # 登録したユーザーを削除
-            users = User.find_by('email', valid_email)
+            users = User.find_by(email=valid_email)
             if users:
                 users[0].destroy()

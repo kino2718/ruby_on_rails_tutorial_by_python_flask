@@ -35,3 +35,15 @@ for n in range(99):
                       activated_at=datetime.now(timezone.utc))
     if not res:
         raise Exception(f'could not create "name" account')
+
+# ユーザーの一部を対象にマイクロポストを生成する
+print('**** add microposts ****')
+users = User.all()
+users.sort(key=lambda x: x.created_at)
+users = users[:6]
+
+for n in range(50):
+    content = fake.text(max_nb_chars=50)
+    print(f'add content: {content}')
+    for user in users:
+        user.microposts.create(content=content)

@@ -77,8 +77,9 @@ def show(id):
     pagination = Pagination(page=page, total=total, per_page=per_page,
                             prev_label='&larr; Previous', next_label='Next &rarr;',
                             css_framework='bootstrap3')
+    token = csrf_token()
     return render_template('users/show.html', user=user, microposts=microposts,
-                           pagination=pagination)
+                           pagination=pagination, csrf_token=token)
 
 @bp.route('/new')
 def new():
@@ -173,3 +174,21 @@ def destroy(id):
     flash('User deleted', 'success')
     users_url = url_for('.index', _external=True)
     return redirect(users_url)
+
+@bp.route('/<int:id>/following')
+@logged_in_user
+def following(id):
+    title = 'Following'
+    user = User.find(id)
+    users = user.following()
+    return render_template('users/show_follow.html', title=title, user=user,
+                           users=users)
+
+@bp.route('/<int:id>/followers')
+@logged_in_user
+def followers(id):
+    title = 'Followers'
+    user = User.find(id)
+    users = user.followers()
+    return render_template('users/show_follow.html', title=title, user=user,
+                           users=users)

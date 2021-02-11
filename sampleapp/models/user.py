@@ -11,6 +11,7 @@ from ..mailers import user_mailer
 from flask_mail import Mail
 from . import micropost as mpost
 from ..helpers.application_helper import InnerClass
+from . import relationship
 
 class User:
     KIND_EMAILS = 'emails'
@@ -441,9 +442,11 @@ class User:
             client.delete(user_key)
         # 1つのtransactionにたくさんの処理を入れられないようなので、transactionから外す
         for m in self.microposts():
-            micropost_key = client.key(
-                mpost.Micropost.KIND_MICROPOSTS, m.id)
-            client.delete(micropost_key)
+            m.destroy()
+        for r in relationship.Relationship.find_by(follower_id=self.id):
+            r.destroy()
+        for r in relationship.Relationship.find_by(followed_id=self.id):
+            r.destroy()
         return self
 
     @staticmethod
@@ -571,7 +574,13 @@ class User:
         return 2*60*60 < dt.total_seconds()
 
     def feed(self):
+        # 自分のmicroposts
         microposts = mpost.Micropost.find_by(user_id=self.id)
+        # フォローしている人のmicroposts
+        for u in self.following():
+            ms = mpost.Micropost.find_by(user_id=u.id)
+            microposts += ms
+        microposts.sort(key=lambda x: x.created_at, reverse=True)
         return microposts
 
     def _does_email_exist(self):
@@ -608,3 +617,52 @@ class User:
         @classmethod
         def count(cls):
             return len(mpost.Micropost.find_by(user_id=cls.outer.id))
+    # end microposts class
+
+    def active_relationships_create(self, followed_id):
+        return relationship.Relationship.create(follower_id=self.id,
+                                                followed_id=followed_id)
+
+    def active_relationships_build(self, followed_id):
+        return relationship.Relationship(follower_id=self.id,
+                                         followed_id=followed_id)
+
+    def active_relationships_find_by(self, followed_id):
+        r = relationship.Relationship.find_by(follower_id=self.id,
+                                              followed_id=followed_id)
+        if r:
+            return r[0]
+        else:
+            return None
+
+    def following(self):
+        rs = relationship.Relationship.find_by(follower_id=self.id)
+        if rs:
+            return [User.find(r.followed_id) for r in rs]
+        else:
+            return []
+
+    def followers(self):
+        rs = relationship.Relationship.find_by(followed_id=self.id)
+        if rs:
+            return [User.find(r.follower_id) for r in rs]
+        else:
+            return []
+
+    def follow(self, other_user):
+        self.active_relationships_create(other_user.id)
+
+    def unfollow(self, other_user):
+        rs = relationship.Relationship.find_by(follower_id=self.id,
+                                              followed_id=other_user.id)
+        if rs:
+            for r in rs:
+                r.destroy()
+
+    def is_following(self, other_user):
+        rs = relationship.Relationship.find_by(follower_id=self.id,
+                                              followed_id=other_user.id)
+        if rs:
+            return True
+        else:
+            return False

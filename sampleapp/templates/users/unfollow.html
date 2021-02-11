@@ -1,0 +1,5 @@
+<form action="{{ url_for('relationships.destroy', id=current_user().active_relationships_find_by(user.id).id) }}" accept-charset="UTF-8" data-remote="true" method="post">
+  <input type="hidden" name="_method" value="delete" />
+  <input type="hidden" name="authenticity_token" value="{{ csrf_token }}" />
+  <input type="submit" name="commit" value="Unfollow" class="btn" />
+</form>

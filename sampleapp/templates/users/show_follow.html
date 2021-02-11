@@ -1,0 +1,37 @@
+{% extends 'layouts/application.html' %}
+
+{% block content %}
+<div class="row">
+  <aside class="col-md-4">
+    <section class="user_info">
+      {{ gravatar_for(user)|safe }}
+      <h1>{{ user.name }}</h1>
+      <span><a href="/users/{{ user.id }}">view my profile</a></span>
+      <span><b>Microposts:</b> {{ user.microposts.count() }}</span>
+    </section>
+    <section class="stats">
+      {% include 'shared/stats.html' %}
+      {% if users %}
+      <div class="user_avatars">
+		{% for u in users %}
+        <a href="/user/{{ u.id }}">
+		  {{ gravatar_for(u, size=30)|safe }}
+		</a>
+		{% endfor %}
+      </div>
+	  {% endif %}
+    </section>
+  </aside>
+  <div class="col-md-8">
+    <h3>{{ title }}</h3>
+    {% if users %}
+    <ul class="users follow">
+	  {% for user in users %}
+	  {% include 'users/user.html' %}
+	  {% endfor %}
+    </ul>
+    <!-- will_paginate -->
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

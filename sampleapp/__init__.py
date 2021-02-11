@@ -5,6 +5,7 @@ from .controllers import sessions_controller
 from .controllers import account_activations_controller
 from .controllers import password_resets_controller
 from .controllers import microposts_controller
+from .controllers import relationships_controller
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -37,6 +38,9 @@ def create_app(test_config=None):
 
     # register microposts blueprint
     app.register_blueprint(microposts_controller.bp)
+
+    # register relationships blueprint
+    app.register_blueprint(relationships_controller.bp)
 
     @app.after_request
     def add_default_headers(resp):

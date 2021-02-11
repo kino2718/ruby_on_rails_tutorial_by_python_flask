@@ -15,6 +15,9 @@ def are_same_templates(ref, contents):
     ref = re.sub(r'<input .*name="authenticity_token" value=".*" />', r'', ref)
     contents = re.sub(r'<input .*name="authenticity_token" value=".*" />', r'',
                       contents)
+    # micropostのpost時刻を取り除く
+    ref = re.sub(r'Posted .* ago.', '', ref)
+    contents = re.sub(r'Posted .* ago.', '', contents)
     return ref == contents
 
 def log_in_as(client, email, password='password', remember_me='1'):

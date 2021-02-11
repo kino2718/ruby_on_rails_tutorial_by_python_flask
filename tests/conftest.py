@@ -2,6 +2,7 @@ import pytest
 from sampleapp import create_app
 from sampleapp.models.user import User
 from sampleapp.models.micropost import Micropost
+from sampleapp.models.relationship import Relationship
 import yaml
 from datetime import datetime, timezone
 from faker import Faker
@@ -79,4 +80,24 @@ def test_microposts(test_users):
         yield test_microposts
     finally:
         # test後の削除はuserの削除から自動的に行われるのでここではやらない
+        pass
+
+@pytest.fixture
+def test_relationships(test_users):
+    test_relationships = {}
+    try:
+        with open('tests/fixtures/relationships.yml') as f:
+            data = yaml.safe_load(f)
+        for k,v in data.items():
+            follower_name = v['follower']
+            followed_name = v['followed']
+            follower = test_users[follower_name]
+            followed = test_users[followed_name]
+            r = Relationship.create(follower_id=follower.id,
+                                    followed_id=followed.id)
+            if r:
+                test_relationships[k] = r
+
+        yield test_relationships
+    finally:
         pass

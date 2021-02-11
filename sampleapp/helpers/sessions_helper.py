@@ -69,7 +69,7 @@ def current_user():
 
 # 渡されたユーザーがカレントユーザーであればtrueを返す
 def is_current_user(user):
-    if user and user == current_user():
+    if user and (cur:=current_user()) and user.id == cur.id:
         return True
     else:
         return False

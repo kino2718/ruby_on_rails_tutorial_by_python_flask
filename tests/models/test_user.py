@@ -76,3 +76,28 @@ def test_associated_microposts_should_be_destroyed(user):
         if m:
             m.destroy()
         assert before_count - 1 == after_count
+
+def test_should_follow_and_unfollow_a_user(test_users):
+    michael = test_users['michael']
+    archer = test_users['archer']
+    assert not michael.is_following(archer)
+    michael.follow(archer)
+    assert michael.is_following(archer)
+    assert michael in archer.followers()
+    michael.unfollow(archer)
+    assert not michael.is_following(archer)
+
+def test_feed_should_have_the_right_posts(test_users, test_microposts,
+                                          test_relationships):
+    michael = test_users['michael']
+    archer  = test_users['archer']
+    lana    = test_users['lana']
+    # フォローしているユーザーの投稿を確認
+    for post_following in lana.microposts():
+        assert post_following in michael.feed()
+    # 自分自身の投稿を確認
+    for post_self in michael.microposts():
+        assert post_self in michael.feed()
+    # フォローしていないユーザーの投稿を確認
+    for post_unfollowed in archer.microposts():
+        assert not post_unfollowed in michael.feed()

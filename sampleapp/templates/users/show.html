@@ -10,8 +10,14 @@
 		{{ user.name }}
 	  </h1>
     </section>
+    <section class="stats">
+      {% include 'shared/stats.html' %}
+    </section>
   </aside>
   <div class="col-md-8">
+	{% if logged_in() %}
+    {% include 'users/follow_form.html'%}
+	{% endif %}
     {% if microposts %}
     <h3>Microposts ({{ user.microposts.count() }})</h3>
     <ol class="microposts">

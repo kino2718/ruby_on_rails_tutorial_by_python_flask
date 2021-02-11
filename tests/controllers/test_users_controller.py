@@ -15,11 +15,7 @@ def test_should_redirect_index_when_not_logged_in(client):
 
         # log in画面にredirectされていることを確認
         ref = render_template('sessions/new.html')
-        #print(f'\nref:\n{ref}\n\ncontents\n{contents}\n')
         assert are_same_templates(ref, contents)
-  #   get users_path
-  #   assert_redirected_to login_url
-  # end
 
 def test_should_redirect_edit_when_not_logged_in(client, test_users):
     test_user = test_users['michael']
@@ -38,7 +34,6 @@ def test_should_redirect_edit_when_not_logged_in(client, test_users):
 
         # log in画面にredirectされていることを確認
         ref = render_template('sessions/new.html', csrf_token=token)
-        #print(f'\nref:\n{ref}\n\ncontents\n{contents}\n')
         assert are_same_templates(ref, contents)
 
 def test_should_redirect_update_when_not_logged_in(client, test_users):
@@ -66,7 +61,6 @@ def test_should_redirect_update_when_not_logged_in(client, test_users):
 
         # log in画面にredirectされていることを確認
         ref = render_template('sessions/new.html', csrf_token=token)
-        #print(f'\nref:\n{ref}\n\ncontents\n{contents}\n')
         assert are_same_templates(ref, contents)
 
 def test_should_redirect_edit_when_logged_in_as_wrong_user(client, test_users):
@@ -148,7 +142,6 @@ def test_should_redirect_destroy_when_not_logged_in(client, test_users):
 
         # ログイン画面にリダイレクトされていることを確認
         ref = render_template('sessions/new.html', csrf_token=token)
-        #print(f'\nref:\n{ref}\n\ncontents\n{contents}\n')
         assert are_same_templates(ref, contents)
 
 def test_should_redirect_destroy_when_logged_in_as_a_non_admin(client, test_users):
@@ -181,4 +174,22 @@ def test_should_redirect_destroy_when_logged_in_as_a_non_admin(client, test_user
         # homeにredirectされていることを確認
         ref = render_template('static_pages/home.html',
                               micropost=other_user.microposts.build())
+        assert are_same_templates(ref, contents)
+
+def test_should_redirect_following_when_not_logged_in(client, test_users):
+    user = test_users['michael']
+    with client:
+        response = client.get(f'/users/{user.id}/following', follow_redirects=True)
+        contents = response.data.decode(encoding='utf-8')
+        # log in画面にredirectされていることを確認
+        ref = render_template('sessions/new.html')
+        assert are_same_templates(ref, contents)
+
+def test_should_redirect_followers_when_not_logged_in(client, test_users):
+    user = test_users['michael']
+    with client:
+        response = client.get(f'/users/{user.id}/followers', follow_redirects=True)
+        contents = response.data.decode(encoding='utf-8')
+        # log in画面にredirectされていることを確認
+        ref = render_template('sessions/new.html')
         assert are_same_templates(ref, contents)

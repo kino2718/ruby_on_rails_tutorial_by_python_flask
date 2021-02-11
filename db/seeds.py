@@ -47,3 +47,13 @@ for n in range(50):
     print(f'add content: {content}')
     for user in users:
         user.microposts.create(content=content)
+
+# 以下のリレーションシップを作成する
+users = User.all()
+user  = users[0]
+following = users[2:51]
+followers = users[3:41]
+for followed in following:
+    user.follow(followed)
+for follower in followers:
+    follower.follow(user)

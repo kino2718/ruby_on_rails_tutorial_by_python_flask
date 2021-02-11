@@ -1,0 +1,17 @@
+{% if not user %}
+{% set user = current_user() %}
+{% endif %}
+<div class="stats">
+  <a href="{{ url_for('users.following', id=user.id) }}">
+    <strong id="following" class="stat">
+      {{ user.following()|length }}
+    </strong>
+    following
+  </a>
+  <a href="{{ url_for('users.followers', id=user.id) }}">
+    <strong id="followers" class="stat">
+      {{ user.followers()|length }}
+    </strong>
+    followers
+  </a>
+</div>

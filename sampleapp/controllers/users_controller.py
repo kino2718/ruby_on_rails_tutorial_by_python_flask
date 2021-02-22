@@ -72,7 +72,7 @@ def show(id):
     page = request.args.get(get_page_parameter(), type=int, default=1)
     per_page = 30
     microposts = user.microposts()
-    total = len(microposts)
+    total = user.microposts.count()
     microposts = microposts[(page-1)*per_page:page*per_page]
     pagination = Pagination(page=page, total=total, per_page=per_page,
                             prev_label='&larr; Previous', next_label='Next &rarr;',

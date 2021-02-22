@@ -107,8 +107,11 @@ class Micropost:
     @classmethod
     def create(cls, **kwargs):
         micropost = cls(**kwargs)
-        micropost.save()
-        return micropost
+        res = micropost.save()
+        if res:
+            return micropost
+        else:
+            return None
 
     def update(self, **kwargs):
         if len(kwargs) == 0:

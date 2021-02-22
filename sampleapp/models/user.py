@@ -10,7 +10,6 @@ import functools
 from ..mailers import user_mailer
 from flask_mail import Mail
 from . import micropost as mpost
-from ..helpers.application_helper import InnerClass
 from . import relationship
 
 class User:
@@ -38,6 +37,7 @@ class User:
         self.reset_token = kwargs.get('reset_token')
         self.reset_digest = kwargs.get('reset_digest')
         self.reset_sent_at = kwargs.get('reset_sent_at')
+        self.microposts = MyMicroposts(self)
         self.errors = Errors()
 
     def __repr__(self):
@@ -408,8 +408,11 @@ class User:
     @classmethod
     def create(cls, **kwargs):
         user = cls(**kwargs)
-        user.save()
-        return user
+        res = user.save()
+        if res:
+            return user
+        else:
+            return None
 
     def reload(self):
         user = User.find(self.id)
@@ -574,14 +577,14 @@ class User:
         return 2*60*60 < dt.total_seconds()
 
     def feed(self):
+        feed = []
         # 自分のmicroposts
-        microposts = mpost.Micropost.find_by(user_id=self.id)
+        feed += self.microposts()
         # フォローしている人のmicroposts
         for u in self.following():
-            ms = mpost.Micropost.find_by(user_id=u.id)
-            microposts += ms
-        microposts.sort(key=lambda x: x.created_at, reverse=True)
-        return microposts
+            feed += u.microposts()
+        feed.sort(key=lambda x: x.created_at, reverse=True)
+        return feed
 
     def _does_email_exist(self):
         client = datastore.Client()
@@ -589,35 +592,6 @@ class User:
         if len(users) == 0 or users[0].id == self.id:
             return False
         return True
-
-    # @InnerClassを付けることでmicropostsクラスからUserクラスのインスタンスに
-    # self.outer又はcls.outerでアクセスできるようになる
-    @InnerClass
-    class microposts(list):
-        def __init__(self):
-            ms = mpost.Micropost.find_by(user_id=self.outer.id)
-            super().__init__(ms)
-
-        @classmethod
-        def build(cls, *args, **kwargs):
-            m = mpost.Micropost(*args, user_id=cls.outer.id, **kwargs)
-            return m
-
-        @classmethod
-        def create(cls, *args, **kwargs):
-            m = mpost.Micropost.create(*args, user_id=cls.outer.id, **kwargs)
-            return m
-
-        @classmethod
-        def find_by(cls, **kwargs):
-            kwargs.update({'user_id':cls.outer.id})
-            ms = mpost.Micropost.find_by(**kwargs)
-            return ms
-
-        @classmethod
-        def count(cls):
-            return len(mpost.Micropost.find_by(user_id=cls.outer.id))
-    # end microposts class
 
     def active_relationships_create(self, followed_id):
         return relationship.Relationship.create(follower_id=self.id,
@@ -666,3 +640,45 @@ class User:
             return True
         else:
             return False
+# end of User class
+
+class MyMicroposts():
+    def __init__(self, user):
+        self._user = user
+        self._microposts = None
+        self._count = None
+
+    def __call__(self):
+        self._get_microposts()
+        return self._microposts
+
+    def build(self, *args, **kwargs):
+        m = mpost.Micropost(*args, user_id=self._user.id, **kwargs)
+        return m
+
+    def create(self, *args, **kwargs):
+        m = mpost.Micropost.create(*args, user_id=self._user.id, **kwargs)
+        if m and self._microposts:
+            # キャッシュに追加
+            self._microposts.insert(0, m)
+            self._count += 1
+        return m
+
+    def find_by(self, **kwargs):
+        kwargs.update({'user_id':self._user.id})
+        ms = mpost.Micropost.find_by(**kwargs)
+        return ms
+
+    def count(self):
+        self._get_microposts()
+        return self._count
+
+    def reset(self):
+        self._microposts = None
+        self._count = None
+
+    def _get_microposts(self):
+        if self._microposts is None:
+            self._microposts = mpost.Micropost.find_by(user_id=self._user.id)
+            self._count = len(self._microposts)
+# end MyMicroposts class

@@ -18,8 +18,8 @@ def test_content_should_be_present(micropost):
     micropost.content = '   '
     assert not micropost.valid()
 
-def test_content_should_be_at_most_140_characters(micropost):
-    micropost.content = 'a' * 141
+def test_content_should_be_at_most_280_characters(micropost):
+    micropost.content = 'a' * 281
     assert not micropost.valid()
 
 def test_order_should_be_most_recent_first(test_microposts):

@@ -51,7 +51,7 @@ class Micropost:
         if not self.content or not self.content.strip():
             v = False
             self.errors.add('content', "content can't be blank")
-        if self.content and 140 < len(self.content):
+        if self.content and 280 < len(self.content):
             v = False
             self.errors.add('content', 'content is too long')
         if not self.user_id:
